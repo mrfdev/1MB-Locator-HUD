@@ -2,7 +2,7 @@
 
 1MB Locator HUD is a client-only Fabric mod for Minecraft 26.2. It replaces coordinate-heavy F3 use with compact, configurable main and details panels. It sends no network messages, requires no server plugin or permission, and works in singleplayer and multiplayer.
 
-The mod was made for [1MoreBlock.com](https://1moreblock.com), a public Java Edition survival Minecraft server currently running Minecraft 26.2. It remains fully server-independent and can be used on any compatible server or in singleplayer.
+The mod was made for [1MoreBlock.com](https://www.1moreblock.com/), a public Java Edition survival Minecraft server currently running Minecraft 26.2. It remains fully server-independent and can be used on any compatible server or in singleplayer.
 
 ![Locator HUD icon](src/main/resources/assets/locatorhud/icon.png)
 
