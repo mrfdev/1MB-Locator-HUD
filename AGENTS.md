@@ -28,4 +28,4 @@
 - Archive name: `1MB-Locator-HUD-<version>.jar`
 - Author shown to users: `mrfloris`
 - License: All Rights Reserved
-- Anticipated public repository: `https://github.com/mrfdev/1MB-Locator-HUD`
+- Public repository: `https://github.com/mrfdev/1MB-Locator-HUD`

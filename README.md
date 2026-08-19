@@ -58,9 +58,13 @@ Run the focused tests with:
 - `src/client/resources`: client translations.
 - `src/test/java`: unit tests for formatting and layout behavior.
 
-## Repository migration
+## Project links
 
-This archive is prepared for the anticipated public repository `mrfdev/1MB-Locator-HUD`. Review [MIGRATION.md](MIGRATION.md) before publishing or removing the original module from its former monorepo.
+- [Public repository](https://github.com/mrfdev/1MB-Locator-HUD)
+- [Issue tracker](https://github.com/mrfdev/1MB-Locator-HUD/issues)
+- [Roadmap](ROADMAP.md)
+
+Migration details from the former monorepo are recorded in [MIGRATION.md](MIGRATION.md).
 
 ## License
 
