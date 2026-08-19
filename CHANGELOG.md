@@ -10,6 +10,7 @@
 - Preserve every configured choice while the restriction is active so the selected coordinate, lens, and target settings return automatically when full debug information becomes available.
 - Kept the policy automatic and non-bypassable in Locator HUD, with no mixin, packet interception, custom networking, server plugin, or new configuration setting.
 - Added focused environment-neutral policy coverage and documented the restriction in usage, configuration, and privacy guidance.
+- Corrected a truncated JUnit BOM checksum in Gradle dependency-verification metadata so fresh Linux CI runners can validate dependencies before compiling; the runtime mod artifact is unchanged.
 
 ## 1.46.0 — development build
 
