@@ -25,9 +25,9 @@ Version 1.12.1 is **Snapshot Public Beta 1**, published for players who want to 
 
 - Minecraft 26.2
 - Java 25
-- Fabric Loader 0.19.3 or newer
-- Fabric API 0.154.2+26.2
-- Mod Menu 20.0.1 or newer is optional but recommended
+- [Fabric Loader 0.19.3 or newer](https://fabricmc.net/)
+- [Fabric API 0.154.2+26.2](https://modrinth.com/mod/fabric-api)
+- [Mod Menu 20.0.1 or newer](https://modrinth.com/mod/modmenu) is optional but recommended
 
 ## Installation
 
@@ -75,3 +75,5 @@ Migration details from the former monorepo are recorded in [MIGRATION.md](MIGRAT
 ## License
 
 Copyright © 2026 mrfloris. All rights reserved. See [LICENSE](LICENSE).
+
+<sub>1MB Locator HUD was created by mrfloris and Codex.</sub>
