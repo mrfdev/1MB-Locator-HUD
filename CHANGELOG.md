@@ -9,6 +9,7 @@
 - Reused the bounded client biome sampler and local column height data, without scanning neighboring terrain, retaining biome history, or adding networking.
 - Replaced positional palette fields with a named, immutable color specification so runtime interpolation and future color roles remain testable outside Minecraft.
 - Audited the README, roadmap, migration record, screenshots, build instructions, defaults, and in-game preset help against the completed 1.40.0 implementation.
+- Made strict dependency verification portable to Linux CI by pinning the additional Maven metadata artifacts it resolves and narrowly exempting Fabric Loom's platform-dependent, locally derived Minecraft common JAR.
 
 ## 1.39.1 — development build
 
