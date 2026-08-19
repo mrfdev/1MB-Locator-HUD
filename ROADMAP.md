@@ -1,5 +1,7 @@
 # Roadmap
 
+The next planned version is 1.13.0.
+
 ## CMI movement-speed indicator and presets
 
 - [ ] Add an optional smaller-font line showing the current CMI walk speed or fly speed, with its own display toggle.

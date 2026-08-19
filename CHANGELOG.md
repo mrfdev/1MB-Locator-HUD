@@ -1,7 +1,8 @@
 # Changelog
 
-## 1.12.1 — standalone export
+## 1.12.1 — Snapshot Public Beta 1
 
+- Published the tested standalone build as the first public beta for community feedback.
 - Packaged the selected elaborate compass-and-XYZ-arrows icon.
 - Exported Locator HUD from the private 1MB Mods monorepo as an independent Fabric project.
 - Added a standalone Gradle build, wrapper, documentation, license notice, and repository migration checklist.
@@ -17,4 +18,4 @@ The mod evolved from a compact XYZ/world/direction HUD into independently config
 - persistent Mod Menu configuration and an `F7` global toggle;
 - public website/issues metadata, readable author/license metadata, and a custom icon.
 
-The detailed pre-extraction changelog remains in the source monorepo until migration is complete.
+The detailed pre-extraction changelog remains archived in the source monorepo.
