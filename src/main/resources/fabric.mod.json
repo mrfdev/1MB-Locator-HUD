@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "locatorhud",
+  "version": "${version}",
+  "name": "1MB Locator HUD",
+  "description": "A compact, color-readable coordinates, world, direction, view-angle, biome, and crosshair-target HUD.",
+  "authors": [
+    "mrfloris"
+  ],
+  "contact": {
+    "homepage": "https://github.com/mrfdev/1MB-Locator-HUD",
+    "issues": "https://github.com/mrfdev/1MB-Locator-HUD/issues",
+    "sources": "https://github.com/mrfdev/1MB-Locator-HUD"
+  },
+  "license": "All Rights Reserved",
+  "icon": "assets/locatorhud/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.mrfdev.locatorhud.LocatorHudClient"
+    ],
+    "modmenu": [
+      "dev.mrfdev.locatorhud.config.LocatorHudModMenu"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": ">=20.0.1"
+  }
+}
