@@ -3,21 +3,21 @@ package dev.mrfdev.locatorhud;
 import java.util.Locale;
 
 public enum CoordinatePrecision {
-    BLOCK("Block", 0),
-    NONE("None", 0),
-    ONE_DECIMAL("1 decimal", 1),
-    TWO_DECIMALS("2 decimals", 2);
+    BLOCK("value.locatorhud.coordinate_precision.block", 0),
+    NONE("value.locatorhud.coordinate_precision.none", 0),
+    ONE_DECIMAL("value.locatorhud.coordinate_precision.one_decimal", 1),
+    TWO_DECIMALS("value.locatorhud.coordinate_precision.two_decimals", 2);
 
-    private final String displayName;
+    private final String translationKey;
     private final int decimalPlaces;
 
-    CoordinatePrecision(String displayName, int decimalPlaces) {
-        this.displayName = displayName;
+    CoordinatePrecision(String translationKey, int decimalPlaces) {
+        this.translationKey = translationKey;
         this.decimalPlaces = decimalPlaces;
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
 
     public String format(double coordinate) {

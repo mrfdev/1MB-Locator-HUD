@@ -18,6 +18,7 @@
 - Keep formatting and layout calculations environment-neutral where practical and cover them with focused unit tests.
 - Keep configuration backward compatible: new primitive switches need safe initializers, and new enum fields need validation fallbacks.
 - Do not add telemetry, network calls, server-only data assumptions, or undiscovered-world information.
+- Treat Minecraft's supported server-provided reduced-debug state as authoritative: suppress coordinate rows, the coordinate lens, coordinate copying, and target sampling/display while it is active. Do not add a client-side bypass without an explicit, reviewed change to this policy.
 - Use `./gradlew clean build` before handing off a release JAR.
 - Keep `README.md`, `CHANGELOG.md`, `gradle.properties`, and Fabric metadata versions aligned.
 - Confirm the packaged JAR contains `fabric.mod.json` and `assets/locatorhud/icon.png`.

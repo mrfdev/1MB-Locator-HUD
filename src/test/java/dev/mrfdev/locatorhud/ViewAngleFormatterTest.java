@@ -6,10 +6,16 @@ import org.junit.jupiter.api.Test;
 
 final class ViewAngleFormatterTest {
     @Test
-    void usesTheStandardUppercaseOffLabelForWholeDegrees() {
-        assertEquals("OFF", ViewAnglePrecision.WHOLE.displayName());
-        assertEquals("1 decimal", ViewAnglePrecision.ONE_DECIMAL.displayName());
-        assertEquals("2 decimals", ViewAnglePrecision.TWO_DECIMALS.displayName());
+    void exposesTranslationKeysForEveryPrecisionChoice() {
+        assertEquals("options.off", ViewAnglePrecision.WHOLE.translationKey());
+        assertEquals(
+            "value.locatorhud.view_angle_precision.one_decimal",
+            ViewAnglePrecision.ONE_DECIMAL.translationKey()
+        );
+        assertEquals(
+            "value.locatorhud.view_angle_precision.two_decimals",
+            ViewAnglePrecision.TWO_DECIMALS.translationKey()
+        );
     }
 
     @Test

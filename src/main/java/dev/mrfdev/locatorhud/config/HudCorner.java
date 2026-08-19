@@ -1,19 +1,18 @@
 package dev.mrfdev.locatorhud.config;
 
 public enum HudCorner {
-    TOP_LEFT("Top left"),
-    TOP_RIGHT("Top right"),
-    BOTTOM_LEFT("Bottom left"),
-    BOTTOM_RIGHT("Bottom right");
+    TOP_LEFT("value.locatorhud.corner.top_left"),
+    TOP_RIGHT("value.locatorhud.corner.top_right"),
+    BOTTOM_LEFT("value.locatorhud.corner.bottom_left"),
+    BOTTOM_RIGHT("value.locatorhud.corner.bottom_right");
 
-    private final String displayName;
+    private final String translationKey;
 
-    HudCorner(String displayName) {
-        this.displayName = displayName;
+    HudCorner(String translationKey) {
+        this.translationKey = translationKey;
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
-
 }

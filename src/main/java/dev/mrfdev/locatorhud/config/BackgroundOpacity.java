@@ -1,24 +1,24 @@
 package dev.mrfdev.locatorhud.config;
 
 public enum BackgroundOpacity {
-    OFF("OFF (minimal)", 0),
-    FAINT("Faint (7%)", 7),
-    LIGHT("Light (24%)", 24),
-    SOFT("Soft (55%)", 55),
-    BALANCED("Balanced (72%)", 72),
-    STRONG("Strong (88%)", 88),
-    SOLID("Solid (100%)", 100);
+    OFF("value.locatorhud.background_opacity.off", 0),
+    FAINT("value.locatorhud.background_opacity.faint", 7),
+    LIGHT("value.locatorhud.background_opacity.light", 24),
+    SOFT("value.locatorhud.background_opacity.soft", 55),
+    BALANCED("value.locatorhud.background_opacity.balanced", 72),
+    STRONG("value.locatorhud.background_opacity.strong", 88),
+    SOLID("value.locatorhud.background_opacity.solid", 100);
 
-    private final String displayName;
+    private final String translationKey;
     private final int percentage;
 
-    BackgroundOpacity(String displayName, int percentage) {
-        this.displayName = displayName;
+    BackgroundOpacity(String translationKey, int percentage) {
+        this.translationKey = translationKey;
         this.percentage = percentage;
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
 
     public int percentage() {

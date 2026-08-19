@@ -36,26 +36,26 @@ final class MainPanelContentTest {
             row(
                 truncatable("Overworld", HudTextRole.WORLD),
                 text(" / ", HudTextRole.ACCENT),
-                text("X ", HudTextRole.X), text("12.3", HudTextRole.PRIMARY),
+                text("X ", HudTextRole.X), truncatable("12.3", HudTextRole.PRIMARY),
                 gap(9),
-                text("Y ", HudTextRole.Y), text("64.0", HudTextRole.PRIMARY),
+                text("Y ", HudTextRole.Y), truncatable("64.0", HudTextRole.PRIMARY),
                 gap(9),
-                text("Z ", HudTextRole.Z), text("-8.5", HudTextRole.PRIMARY)
+                text("Z ", HudTextRole.Z), truncatable("-8.5", HudTextRole.PRIMARY)
             ),
             row(
                 text("BLOCK: ", HudTextRole.SECONDARY),
-                text("X ", HudTextRole.X), text("12", HudTextRole.PRIMARY),
+                text("X ", HudTextRole.X), truncatable("12", HudTextRole.PRIMARY),
                 gap(9),
-                text("Y ", HudTextRole.Y), text("64", HudTextRole.PRIMARY),
+                text("Y ", HudTextRole.Y), truncatable("64", HudTextRole.PRIMARY),
                 gap(9),
-                text("Z ", HudTextRole.Z), text("-9", HudTextRole.PRIMARY)
+                text("Z ", HudTextRole.Z), truncatable("-9", HudTextRole.PRIMARY)
             ),
             row(
-                text("North", HudTextRole.DIRECTION),
+                truncatable("North", HudTextRole.DIRECTION),
                 text(" (", HudTextRole.SECONDARY),
-                text("143°", HudTextRole.PRIMARY),
+                truncatable("143°", HudTextRole.PRIMARY),
                 text(" • ", HudTextRole.ACCENT),
-                text("52°↑", HudTextRole.PRIMARY),
+                truncatable("52°↑", HudTextRole.PRIMARY),
                 text(")", HudTextRole.SECONDARY)
             )
         ), content.rows());
@@ -87,9 +87,9 @@ final class MainPanelContentTest {
         );
 
         assertEquals(List.of(row(
-            text("143°", HudTextRole.PRIMARY),
+            truncatable("143°", HudTextRole.PRIMARY),
             text(" • ", HudTextRole.ACCENT),
-            text("52°↑", HudTextRole.PRIMARY)
+            truncatable("52°↑", HudTextRole.PRIMARY)
         )), content.rows());
     }
 
@@ -105,11 +105,11 @@ final class MainPanelContentTest {
         );
 
         assertEquals(List.of(row(
-            text("X ", HudTextRole.X), text("12.3", HudTextRole.PRIMARY),
+            text("X ", HudTextRole.X), truncatable("12.3", HudTextRole.PRIMARY),
             gap(5),
-            text("Y ", HudTextRole.Y), text("64.0", HudTextRole.PRIMARY),
+            text("Y ", HudTextRole.Y), truncatable("64.0", HudTextRole.PRIMARY),
             gap(5),
-            text("Z ", HudTextRole.Z), text("-8.5", HudTextRole.PRIMARY),
+            text("Z ", HudTextRole.Z), truncatable("-8.5", HudTextRole.PRIMARY),
             text("/", HudTextRole.ACCENT),
             truncatable("Overworld", HudTextRole.WORLD)
         )), content.rows());
@@ -188,20 +188,20 @@ final class MainPanelContentTest {
 
         assertEquals(List.of(
             row(
-                text("X ", HudTextRole.X), text("800.0", HudTextRole.PRIMARY),
+                text("X ", HudTextRole.X), truncatable("800.0", HudTextRole.PRIMARY),
                 gap(9),
-                text("Y ", HudTextRole.Y), text("64.0", HudTextRole.PRIMARY),
+                text("Y ", HudTextRole.Y), truncatable("64.0", HudTextRole.PRIMARY),
                 gap(9),
-                text("Z ", HudTextRole.Z), text("-80.0", HudTextRole.PRIMARY)
+                text("Z ", HudTextRole.Z), truncatable("-80.0", HudTextRole.PRIMARY)
             ),
             row(
-                text("NETHER", HudTextRole.WORLD),
+                truncatable("NETHER", HudTextRole.WORLD),
                 text(" ≈ ", HudTextRole.ACCENT),
-                text("X ", HudTextRole.X), text("100.0", HudTextRole.PRIMARY),
+                text("X ", HudTextRole.X), truncatable("100.0", HudTextRole.PRIMARY),
                 gap(9),
-                text("Z ", HudTextRole.Z), text("-10.0", HudTextRole.PRIMARY)
+                text("Z ", HudTextRole.Z), truncatable("-10.0", HudTextRole.PRIMARY)
             ),
-            row(text("North", HudTextRole.DIRECTION))
+            row(truncatable("North", HudTextRole.DIRECTION))
         ), content.rows());
     }
 

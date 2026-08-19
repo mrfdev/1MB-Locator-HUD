@@ -79,7 +79,10 @@ public final class ClientHudSampler {
             && this.config.biomeThemeOverrideEnabled();
         boolean biomeRequested = biomeThemeRequested
             || detailsActive && (this.config.biomeEnabled() || biomeTransitionRequested);
-        int targetSelection = detailsActive ? targetSelection() : 0;
+        int targetSelection = detailsActive
+            && DebugInfoPolicy.allowsTargetDetails(currentPlayer.isReducedDebugInfo())
+            ? targetSelection()
+            : 0;
         int blockX = currentPlayer.getBlockX();
         int blockY = currentPlayer.getBlockY();
         int blockZ = currentPlayer.getBlockZ();
@@ -144,6 +147,7 @@ public final class ClientHudSampler {
             currentPlayer.getX(),
             currentPlayer.getY(),
             currentPlayer.getZ(),
+            currentPlayer.isReducedDebugInfo(),
             currentPlayer.getDirection().getName(),
             currentPlayer.getYRot(),
             currentPlayer.getXRot(),

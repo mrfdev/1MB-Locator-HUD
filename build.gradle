@@ -102,12 +102,17 @@ processResources {
 
 def runtimeJar = layout.buildDirectory.file("libs/${archiveName}-${modVersion}.jar")
 def checksumFile = layout.buildDirectory.file("libs/${archiveName}-${modVersion}.jar.sha256")
+def translationKeySources = files(
+    fileTree('src/main/java') { include '**/*.java' },
+    fileTree('src/client/java') { include '**/*.java' }
+)
 
 tasks.register('verifyReleaseJar') {
     group = 'verification'
-    description = 'Verifies the runtime JAR name, required resources, and client-only metadata.'
+    description = 'Verifies runtime JAR identity, resources, metadata, and translation coverage.'
     dependsOn tasks.named('jar')
     inputs.file(runtimeJar)
+    inputs.files(translationKeySources)
 
     doLast {
         File archive = runtimeJar.get().asFile
@@ -158,6 +163,43 @@ tasks.register('verifyReleaseJar') {
             }
             if (suggests != [modmenu: ">=${modMenuVersion}"]) {
                 throw new GradleException("Unexpected suggested dependencies: ${suggests}")
+            }
+
+            String translationsText = zip.getInputStream(
+                zip.getEntry('assets/locatorhud/lang/en_us.json')
+            ).getText(StandardCharsets.UTF_8.name())
+            Map translations = (Map) new JsonSlurper().parseText(translationsText)
+            String translationKeyPrefixes = [
+                'key(?:\\.category)?',
+                'message',
+                'screen',
+                'section',
+                'option',
+                'value',
+                'hud',
+                'tooltip',
+                'narration',
+                'button',
+                'confirm'
+            ].join('|')
+            def keyPattern = java.util.regex.Pattern.compile(
+                "\"((?:${translationKeyPrefixes})\\.locatorhud\\.[a-z0-9_.-]+)\""
+            )
+            Set<String> referencedKeys = [] as Set<String>
+            translationKeySources.files.sort().each { file ->
+                String source = Files.readString(file.toPath(), StandardCharsets.UTF_8)
+                def matcher = keyPattern.matcher(source)
+                while (matcher.find()) {
+                    referencedKeys.add(matcher.group(1))
+                }
+            }
+            List<String> missingKeys = referencedKeys.findAll { key ->
+                !translations.containsKey(key)
+            }.sort()
+            if (!missingKeys.isEmpty()) {
+                throw new GradleException(
+                    'English translations are missing referenced keys:\n - ' + missingKeys.join('\n - ')
+                )
             }
         }
     }

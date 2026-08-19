@@ -1,6 +1,6 @@
 # Roadmap
 
-The current public release is 1.40.0 — Snapshot Public Beta 3.
+The current public release is 1.47.0 — Snapshot Public Beta 4. This prerelease requires testing.
 
 This roadmap records both accepted work and explicit non-goals. New functionality must remain standalone, client-only, backward compatible, and free of telemetry or custom networking.
 
@@ -39,13 +39,13 @@ This roadmap records both accepted work and explicit non-goals. New functionalit
 
 ## Approved UI and quality-of-life work
 
-- [ ] Add a remappable `Open Locator HUD settings` key so configuration remains accessible without Mod Menu.
+- [x] Add a remappable `Open Locator HUD settings` key so configuration remains accessible without Mod Menu.
   - Prefer an unbound default to avoid key conflicts; keep Mod Menu integration optional.
-- [ ] Add a direct panel-placement editor if it can be implemented cleanly with supported client APIs.
+- [x] Add a direct panel-placement editor if it can be implemented cleanly with supported client APIs.
   - Allow dragging the main and details panels over the live configuration preview.
   - Support edge/corner snapping and small, clamped X/Y offsets.
   - Keep the normal gameplay HUD non-interactive so it never captures attack or use clicks.
-- [ ] Add configurable minimum and maximum widths for each panel.
+- [x] Add configurable minimum and maximum widths for each panel.
   - Preserve automatic sizing as the default.
   - Validate and clamp values so minimum width cannot exceed maximum width or push a panel irrecoverably off-screen.
 - [x] Add optional target-value linger so empty auto-hidden rows do not flicker when the crosshair passes over block edges.
@@ -63,9 +63,9 @@ This roadmap records both accepted work and explicit non-goals. New functionalit
   - Presets only apply existing settings; all controls remain individually editable afterward.
   - A Privacy preset may hide existing rows, but must not introduce the rejected dynamic Privacy Shield or automatic masking behavior.
   - Avoid named slots, syncing, automatic switching, or a general preset-management system.
-- [ ] Move every player-facing option value to translation keys and accept community locale files.
+- [x] Move every player-facing option value to translation keys and accept community locale files.
   - Cover enum choices, positions, palette names, precision names, preset names, tooltips, and confirmation text.
-- [ ] Add a top-level `Accessibility settings` switch, defaulting to `OFF`, to expose additional accessibility controls without cluttering the normal screen.
+- [x] Add a top-level `Accessibility settings` switch, defaulting to `OFF`, to expose additional accessibility controls without cluttering the normal screen.
   - Include larger panel sizes such as 110%, 125%, and 150%, with screen-edge clamping.
   - Include improved keyboard/narrator guidance and explanations for disabled controls.
   - Do not add a forced high-contrast lock; existing palette/background controls remain available normally.
@@ -97,19 +97,19 @@ Complete these in order where practical. Keep each change focused, preserve the 
 5. [x] Extract a scale-aware, testable panel geometry engine.
    - Handle automatic and configured widths, 60–150% scales, screen-edge clamping, offsets, same-corner stacking, oversized panels, and narrow-width truncation.
    - Use it as the shared foundation for accessibility sizes, minimum/maximum widths, and direct panel placement.
-6. [ ] Add batched or briefly debounced configuration persistence before implementing drag placement and additional sliders.
+6. [x] Add batched or briefly debounced configuration persistence before implementing drag placement and additional sliders.
    - Keep live preview, but save once after a completed interaction or grouped preset/reset operation instead of once per intermediate value.
    - Keep this on the client thread; the small local JSON file does not justify a background executor and its synchronization risks.
 7. [x] Modularize the configuration UI before adding the remaining controls.
    - Split global, main, details, and footer construction into focused sections, leave a clean insertion point for future accessibility controls, and adopt normal-height widgets in a responsive scroll/single-column layout.
    - Replace the duplicated scale/background slider implementations with one small tested discrete-option slider.
    - Recompute dependent control states in one place after changes instead of scattering button activation updates through callbacks.
-8. [ ] Move hard-coded player-facing enum values to translation keys without coupling environment-neutral code to Minecraft components.
+8. [x] Move hard-coded player-facing enum values to translation keys without coupling environment-neutral code to Minecraft components.
    - Preserve serialized enum identifiers for backward compatibility and update tests so they validate behavior and keys rather than English display text.
 9. [x] Preserve structured target data until display formatting.
    - Capture a stable registered identifier and friendly localized text instead of shortening immediately to one string.
    - Do not retain live entity, block-state, fluid-state, or world objects for caching or linger.
-10. [ ] Centralize client key mappings and user-triggered actions as the settings and coordinate-copy bindings are added.
+10. [x] Centralize client key mappings and user-triggered actions as the settings and coordinate-copy bindings are added.
     - Keep coordinate export formatting pure and tested; clipboard access remains explicit, local, and isolated at the client boundary.
 11. [x] Move client-independent configuration types such as palette and corner data into the environment-neutral source set where that improves focused testing.
     - Replace error-prone positional palette fields with a small named palette specification if new dynamic-theme roles make the current enum harder to maintain.
@@ -123,7 +123,11 @@ Optimization rule: profile before pursuing formatting micro-optimizations. Bound
 
 ## Approved security, privacy, and engineering hardening
 
-- [ ] Verify Minecraft 26.2's exact server-provided reduced-debug state and, when reliably available, respect it by default for coordinates and target details.
+- [x] Verify Minecraft 26.2's exact server-provided reduced-debug state and, when reliably available, respect it by default for coordinates and target details.
+  - Use the supported player state initialized during login and updated by vanilla while connected; do not inspect packets or add custom networking.
+  - Suppress decimal/block coordinates, the coordinate lens, explicit coordinate copying, and block/fluid/entity target sampling and display while the restriction is active.
+  - Clear target linger immediately, leave the clipboard unchanged on a refused copy, and retain configured choices so they return when full debug information becomes available.
+  - Keep the policy automatic and non-bypassable in Locator HUD. World name, direction/angles, biome information, and locally observed movement speed remain available.
 - [x] Preserve malformed configuration files as dated `.broken.json` backups, load safe defaults, and show one concise log warning.
 - [ ] Surface configuration-save failures in game instead of relying only on the structured failure result and concise log warning; retain unsaved values for retry where practical.
 - [x] Add a configuration schema version and explicit migration tests for legacy, missing, invalid, and future-facing fields.

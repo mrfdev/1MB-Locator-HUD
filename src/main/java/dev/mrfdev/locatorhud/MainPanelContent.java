@@ -97,12 +97,12 @@ public final class MainPanelContent {
         HudTextRole labelRole
     ) {
         parts.add(HudText.of(label, labelRole));
-        parts.add(HudText.of(value, HudTextRole.PRIMARY));
+        parts.add(HudText.truncatable(value, HudTextRole.PRIMARY));
     }
 
     private static HudRow coordinateLensRow(LensValues values, HudLayout layout) {
         List<HudRowPart> parts = new ArrayList<>();
-        parts.add(HudText.of(values.destination(), HudTextRole.WORLD));
+        parts.add(HudText.truncatable(values.destination(), HudTextRole.WORLD));
         parts.add(HudText.of(" ≈ ", HudTextRole.ACCENT));
         addCoordinate(parts, "X ", values.x(), HudTextRole.X);
         parts.add(new HudGap(layout.segmentGap()));
@@ -118,11 +118,17 @@ public final class MainPanelContent {
         List<HudRowPart> parts = new ArrayList<>();
         for (ViewRowSegment segment : segments) {
             parts.add(switch (segment) {
-                case DIRECTION -> HudText.of(values.direction(), HudTextRole.DIRECTION);
+                case DIRECTION -> HudText.truncatable(values.direction(), HudTextRole.DIRECTION);
                 case OPEN_PARENTHESIS -> HudText.of(" (", HudTextRole.SECONDARY);
-                case HORIZONTAL_ANGLE -> HudText.of(values.horizontalAngle(), HudTextRole.PRIMARY);
+                case HORIZONTAL_ANGLE -> HudText.truncatable(
+                    values.horizontalAngle(),
+                    HudTextRole.PRIMARY
+                );
                 case DIVIDER -> HudText.of(layout.detailDivider(), HudTextRole.ACCENT);
-                case VERTICAL_ANGLE -> HudText.of(values.verticalAngle(), HudTextRole.PRIMARY);
+                case VERTICAL_ANGLE -> HudText.truncatable(
+                    values.verticalAngle(),
+                    HudTextRole.PRIMARY
+                );
                 case CLOSE_PARENTHESIS -> HudText.of(")", HudTextRole.SECONDARY);
             });
         }

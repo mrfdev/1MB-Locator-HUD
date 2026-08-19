@@ -8,6 +8,15 @@ import java.util.function.ToDoubleFunction;
 public final class DiscreteSliderOptions<T> {
     private final List<Entry<T>> entries;
 
+    public static <T> DiscreteSliderOptions<T> evenlySpaced(List<T> values) {
+        List<T> resolvedValues = List.copyOf(Objects.requireNonNull(values, "values"));
+        int positionDivisor = Math.max(1, resolvedValues.size() - 1);
+        return new DiscreteSliderOptions<>(
+            resolvedValues,
+            value -> resolvedValues.indexOf(value) / (double) positionDivisor
+        );
+    }
+
     public DiscreteSliderOptions(List<T> values, ToDoubleFunction<? super T> position) {
         Objects.requireNonNull(values, "values");
         Objects.requireNonNull(position, "position");

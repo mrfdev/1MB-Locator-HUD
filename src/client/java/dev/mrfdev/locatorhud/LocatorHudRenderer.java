@@ -13,23 +13,29 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 public final class LocatorHudRenderer {
-    private static final int STACKED_PANEL_GAP = 4;
-
     private final LocatorHudConfig config;
     private final ClientHudSampler sampler;
+    private final HudPanelPlacements panelPlacements;
 
-    public LocatorHudRenderer(LocatorHudConfig config, ClientHudSampler sampler) {
+    public LocatorHudRenderer(
+        LocatorHudConfig config,
+        ClientHudSampler sampler,
+        HudPanelPlacements panelPlacements
+    ) {
         this.config = Objects.requireNonNull(config, "config");
         this.sampler = Objects.requireNonNull(sampler, "sampler");
+        this.panelPlacements = Objects.requireNonNull(panelPlacements, "panelPlacements");
     }
 
     public void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft client = Minecraft.getInstance();
         if (!this.config.enabled() || client.font == null) {
+            this.panelPlacements.update(null, null);
             return;
         }
         HudSnapshot snapshot = this.sampler.snapshot(client);
         if (snapshot == null) {
+            this.panelPlacements.update(null, null);
             return;
         }
 
@@ -39,9 +45,10 @@ public final class LocatorHudRenderer {
         PanelGeometry.Placement mainPlacement = this.config.mainPanelEnabled()
             ? renderMainPanel(graphics, font, palette, snapshot, screen)
             : null;
-        if (this.config.detailsPanelEnabled()) {
-            renderDetailsPanel(graphics, font, palette, snapshot, screen, mainPlacement);
-        }
+        PanelGeometry.Placement detailsPlacement = this.config.detailsPanelEnabled()
+            ? renderDetailsPanel(graphics, font, palette, snapshot, screen, mainPlacement)
+            : null;
+        this.panelPlacements.update(mainPlacement, detailsPlacement);
     }
 
     private PanelGeometry.Placement renderMainPanel(
@@ -57,7 +64,10 @@ public final class LocatorHudRenderer {
         boolean directionEnabled = directionDisplay.showsDirection();
         boolean anglesEnabled = this.config.viewAnglesEnabled();
         HudPanelContent content = MainPanelContent.compose(
-            this.config.coordinateDisplay(),
+            DebugInfoPolicy.coordinateDisplay(
+                snapshot.reducedDebugInfo(),
+                this.config.coordinateDisplay()
+            ),
             this.config.worldNameDisplay(),
             directionEnabled,
             anglesEnabled,
@@ -87,15 +97,17 @@ public final class LocatorHudRenderer {
         if (content.isEmpty()) {
             return null;
         }
-        content = fitContent(
+        FittedPanelContent fitted = fitPanelContent(
             font,
             content,
-            PanelGeometry.maximumContentWidth(screen, layout, scale.percentage())
+            layout,
+            PanelGeometry.maximumContentWidth(screen, layout, scale.percentage()),
+            this.config.mainPanelWidthLimits()
         );
-        int contentWidth = contentWidth(font, content);
+        content = fitted.content();
         PanelGeometry.PanelSize size = PanelGeometry.measure(
             layout,
-            contentWidth,
+            fitted.contentWidth(),
             font.lineHeight,
             content.rowCount(),
             scale.percentage()
@@ -104,7 +116,8 @@ public final class LocatorHudRenderer {
             screen,
             this.config.corner(),
             layout,
-            size
+            size,
+            this.config.mainPanelOffset()
         );
 
         graphics.pose().pushMatrix();
@@ -127,7 +140,10 @@ public final class LocatorHudRenderer {
     }
 
     private Optional<MainPanelContent.LensValues> coordinateLens(HudSnapshot snapshot) {
-        if (!this.config.coordinateLensEnabled()) {
+        if (!DebugInfoPolicy.coordinateLensEnabled(
+            snapshot.reducedDebugInfo(),
+            this.config.coordinateLensEnabled()
+        )) {
             return Optional.empty();
         }
         CoordinatePrecision precision = this.config.precision();
@@ -142,7 +158,7 @@ public final class LocatorHudRenderer {
         ));
     }
 
-    private void renderDetailsPanel(
+    private PanelGeometry.Placement renderDetailsPanel(
         GuiGraphicsExtractor graphics,
         Font font,
         HudPaletteColors palette,
@@ -159,9 +175,18 @@ public final class LocatorHudRenderer {
                 this.config.biomeEnabled(),
                 this.config.biomeTransitionEnabled(),
                 this.config.movementSpeedEnabled(),
-                this.config.targetBlockEnabled(),
-                this.config.targetFluidEnabled(),
-                this.config.targetEntityEnabled(),
+                DebugInfoPolicy.targetDetailEnabled(
+                    snapshot.reducedDebugInfo(),
+                    this.config.targetBlockEnabled()
+                ),
+                DebugInfoPolicy.targetDetailEnabled(
+                    snapshot.reducedDebugInfo(),
+                    this.config.targetFluidEnabled()
+                ),
+                DebugInfoPolicy.targetDetailEnabled(
+                    snapshot.reducedDebugInfo(),
+                    this.config.targetEntityEnabled()
+                ),
                 this.config.autoHideEmptyTargetValues()
             ),
             new DetailsPanelContent.Values(
@@ -174,35 +199,44 @@ public final class LocatorHudRenderer {
             )
         );
         if (content.isEmpty()) {
-            return;
+            return null;
         }
-        content = fitContent(
+        FittedPanelContent fitted = fitPanelContent(
             font,
             content,
-            PanelGeometry.maximumContentWidth(screen, layout, scale.percentage())
+            layout,
+            PanelGeometry.maximumContentWidth(screen, layout, scale.percentage()),
+            this.config.detailsPanelWidthLimits()
         );
-        int contentWidth = contentWidth(font, content);
+        content = fitted.content();
         PanelGeometry.PanelSize size = PanelGeometry.measure(
             layout,
-            contentWidth,
+            fitted.contentWidth(),
             font.lineHeight,
             content.rowCount(),
             scale.percentage()
         );
+        boolean autoStack = mainPlacement != null
+            && this.config.detailsCorner() == this.config.corner()
+            && this.config.detailsPanelOffset().equals(PanelGeometry.Offset.ZERO);
+        PanelGeometry.Offset placementOffset = autoStack
+            ? this.config.mainPanelOffset()
+            : this.config.detailsPanelOffset();
         PanelGeometry.Placement placement = PanelGeometry.place(
             screen,
             this.config.detailsCorner(),
             layout,
-            size
+            size,
+            placementOffset
         );
-        if (mainPlacement != null && this.config.detailsCorner() == this.config.corner()) {
+        if (autoStack) {
             placement = PanelGeometry.stack(
                 screen,
                 placement,
                 mainPlacement,
                 layout,
                 this.config.detailsCorner(),
-                STACKED_PANEL_GAP
+                PanelGeometry.STACKED_PANEL_GAP
             );
         }
 
@@ -222,6 +256,7 @@ public final class LocatorHudRenderer {
         } finally {
             graphics.pose().popMatrix();
         }
+        return placement;
     }
 
     private void drawContent(
@@ -296,6 +331,25 @@ public final class LocatorHudRenderer {
         return new HudPanelContent(fittedRows);
     }
 
+    private static FittedPanelContent fitPanelContent(
+        Font font,
+        HudPanelContent content,
+        HudLayout layout,
+        int screenMaximumContentWidth,
+        PanelWidthLimits widthLimits
+    ) {
+        int constrainedWidth = widthLimits.constrainContentWidth(
+            contentWidth(font, content),
+            screenMaximumContentWidth,
+            layout
+        );
+        HudPanelContent fittedContent = fitContent(font, content, constrainedWidth);
+        return new FittedPanelContent(
+            fittedContent,
+            Math.max(constrainedWidth, contentWidth(font, fittedContent))
+        );
+    }
+
     private static HudRow fitRow(Font font, HudRow row, int maximumWidth) {
         List<HudRowPart> fittedParts = new ArrayList<>(row.parts());
         int width = rowWidth(font, row);
@@ -341,8 +395,20 @@ public final class LocatorHudRenderer {
             return value;
         }
         String ellipsis = "…";
+        if (maximumWidth < font.width(ellipsis)) {
+            return font.plainSubstrByWidth(value, maximumWidth);
+        }
         int textWidth = Math.max(0, maximumWidth - font.width(ellipsis));
         return font.plainSubstrByWidth(value, textWidth) + ellipsis;
+    }
+
+    private record FittedPanelContent(HudPanelContent content, int contentWidth) {
+        private FittedPanelContent {
+            Objects.requireNonNull(content, "content");
+            if (contentWidth < 0) {
+                throw new IllegalArgumentException("contentWidth must not be negative");
+            }
+        }
     }
 
 }

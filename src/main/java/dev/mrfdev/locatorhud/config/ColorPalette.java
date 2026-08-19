@@ -4,7 +4,7 @@ import dev.mrfdev.locatorhud.HudPaletteColors;
 
 public enum ColorPalette {
     NONE(
-        "None (all white)",
+        "value.locatorhud.palette.none",
         0x181818,
         0xFFFFFF,
         0xFFFFFF,
@@ -18,7 +18,7 @@ public enum ColorPalette {
         0xFFFFFF
     ),
     DUO_TONE(
-        "Duo-tone (gray/white)",
+        "value.locatorhud.palette.duo_tone",
         0x181818,
         0x8E8E8E,
         0xFFFFFF,
@@ -32,7 +32,7 @@ public enum ColorPalette {
         0xC0C0C0
     ),
     OCEAN(
-        "Ocean",
+        "value.locatorhud.palette.ocean",
         0x17283F,
         0x4AA8FF,
         0xF2F7FF,
@@ -46,7 +46,7 @@ public enum ColorPalette {
         0xFFD166
     ),
     AMETHYST(
-        "Amethyst",
+        "value.locatorhud.palette.amethyst",
         0x281D38,
         0xC084FC,
         0xFAF5FF,
@@ -60,7 +60,7 @@ public enum ColorPalette {
         0xFDE68A
     ),
     EMERALD(
-        "Emerald",
+        "value.locatorhud.palette.emerald",
         0x142D2B,
         0x34D399,
         0xECFDF5,
@@ -74,7 +74,7 @@ public enum ColorPalette {
         0xFDE68A
     ),
     EMBER(
-        "Ember",
+        "value.locatorhud.palette.ember",
         0x342119,
         0xFB923C,
         0xFFF7ED,
@@ -88,7 +88,7 @@ public enum ColorPalette {
         0xFBBF24
     ),
     FROST(
-        "Frost",
+        "value.locatorhud.palette.frost",
         0x162A33,
         0x67E8F9,
         0xF0FDFF,
@@ -102,7 +102,7 @@ public enum ColorPalette {
         0xC4B5FD
     ),
     ROSE(
-        "Rose",
+        "value.locatorhud.palette.rose",
         0x331D2C,
         0xF472B6,
         0xFFF1F7,
@@ -116,7 +116,7 @@ public enum ColorPalette {
         0xFDE68A
     ),
     GOLD(
-        "Gold",
+        "value.locatorhud.palette.gold",
         0x302711,
         0xFBBF24,
         0xFFFBEB,
@@ -130,11 +130,11 @@ public enum ColorPalette {
         0xFDA4AF
     );
 
-    private final String displayName;
+    private final String translationKey;
     private final HudPaletteColors colors;
 
     ColorPalette(
-        String displayName,
+        String translationKey,
         int backgroundRgb,
         int accentRgb,
         int primaryRgb,
@@ -147,7 +147,7 @@ public enum ColorPalette {
         int biomeRgb,
         int targetEntityLabelRgb
     ) {
-        this.displayName = displayName;
+        this.translationKey = translationKey;
         this.colors = new HudPaletteColors(
             backgroundRgb,
             accentRgb,
@@ -163,8 +163,8 @@ public enum ColorPalette {
         );
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
 
     public int backgroundRgb() {

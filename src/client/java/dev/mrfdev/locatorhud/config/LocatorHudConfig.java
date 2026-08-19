@@ -4,6 +4,9 @@ import dev.mrfdev.locatorhud.CoordinateCopyFormat;
 import dev.mrfdev.locatorhud.CoordinateDisplayMode;
 import dev.mrfdev.locatorhud.CoordinatePrecision;
 import dev.mrfdev.locatorhud.HudScale;
+import dev.mrfdev.locatorhud.PanelGeometry.Offset;
+import dev.mrfdev.locatorhud.PanelWidth;
+import dev.mrfdev.locatorhud.PanelWidthLimits;
 import dev.mrfdev.locatorhud.TargetNameMode;
 import dev.mrfdev.locatorhud.ViewAnglePrecision;
 import dev.mrfdev.locatorhud.ViewDirectionDisplay;
@@ -17,10 +20,14 @@ import org.slf4j.LoggerFactory;
 
 public final class LocatorHudConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("locatorhud");
+    private static final int SAVE_DEBOUNCE_TICKS = 10;
 
     private final LocatorHudConfigStore store;
     private final LocatorHudSavedSetupStore savedSetupStore;
     private final LocatorHudSettings settings;
+    private final ConfigSaveDebouncer saveDebouncer = new ConfigSaveDebouncer(
+        SAVE_DEBOUNCE_TICKS
+    );
     private final LocatorHudConfigStore.LoadStatus loadStatus;
     private final Path recoveredBackup;
     private String persistenceBlockReason;
@@ -78,6 +85,21 @@ public final class LocatorHudConfig {
     }
 
     public LocatorHudConfigStore.SaveResult save() {
+        this.saveDebouncer.cancel();
+        return persistSettings();
+    }
+
+    public void tickPersistence() {
+        if (this.saveDebouncer.tick()) {
+            persistSettings();
+        }
+    }
+
+    public LocatorHudConfigStore.SaveResult flushPendingSave() {
+        return this.saveDebouncer.takePending() ? persistSettings() : this.lastSaveResult;
+    }
+
+    private LocatorHudConfigStore.SaveResult persistSettings() {
         this.settings.validate();
         if (this.persistenceBlockReason != null) {
             this.lastSaveResult = LocatorHudConfigStore.SaveResult.blocked(this.persistenceBlockReason);
@@ -121,6 +143,7 @@ public final class LocatorHudConfig {
     }
 
     public LocatorHudConfigStore.SaveResult saveCurrentSetup() {
+        flushPendingSave();
         LocatorHudSettings snapshot = this.settings.copy();
         this.lastSavedSetupSaveResult = this.savedSetupStore.save(snapshot);
         if (this.lastSavedSetupSaveResult.wasSaved()) {
@@ -171,6 +194,14 @@ public final class LocatorHudConfig {
         setEnabled(!enabled());
     }
 
+    public boolean accessibilitySettingsEnabled() {
+        return this.settings.accessibilitySettingsEnabled();
+    }
+
+    public void setAccessibilitySettingsEnabled(boolean accessibilitySettingsEnabled) {
+        update(settings -> settings.setAccessibilitySettingsEnabled(accessibilitySettingsEnabled));
+    }
+
     public boolean mainPanelEnabled() {
         return this.settings.mainPanelEnabled();
     }
@@ -193,6 +224,14 @@ public final class LocatorHudConfig {
 
     public void setCorner(HudCorner corner) {
         update(settings -> settings.setCorner(corner));
+    }
+
+    public Offset mainPanelOffset() {
+        return this.settings.mainPanelOffset();
+    }
+
+    public void setMainPanelPlacement(HudCorner corner, Offset offset) {
+        update(settings -> settings.setMainPanelPlacement(corner, offset));
     }
 
     public CoordinateDisplayMode coordinateDisplay() {
@@ -355,6 +394,26 @@ public final class LocatorHudConfig {
         update(settings -> settings.setHudScale(hudScale));
     }
 
+    public PanelWidthLimits mainPanelWidthLimits() {
+        return this.settings.mainPanelWidthLimits();
+    }
+
+    public PanelWidth mainPanelMinimumWidth() {
+        return this.settings.mainPanelMinimumWidth();
+    }
+
+    public void setMainPanelMinimumWidth(PanelWidth minimumWidth) {
+        update(settings -> settings.setMainPanelMinimumWidth(minimumWidth));
+    }
+
+    public PanelWidth mainPanelMaximumWidth() {
+        return this.settings.mainPanelMaximumWidth();
+    }
+
+    public void setMainPanelMaximumWidth(PanelWidth maximumWidth) {
+        update(settings -> settings.setMainPanelMaximumWidth(maximumWidth));
+    }
+
     public HudCorner detailsCorner() {
         return this.settings.detailsCorner();
     }
@@ -363,12 +422,47 @@ public final class LocatorHudConfig {
         update(settings -> settings.setDetailsCorner(detailsCorner));
     }
 
+    public Offset detailsPanelOffset() {
+        return this.settings.detailsPanelOffset();
+    }
+
+    public void setDetailsPanelPlacement(HudCorner corner, Offset offset) {
+        update(settings -> settings.setDetailsPanelPlacement(corner, offset));
+    }
+
+    public void resetPanelPlacements() {
+        update(settings -> {
+            settings.setMainPanelPlacement(HudCorner.TOP_LEFT, Offset.ZERO);
+            settings.setDetailsPanelPlacement(HudCorner.TOP_RIGHT, Offset.ZERO);
+        });
+    }
+
     public HudScale detailsHudScale() {
         return this.settings.detailsHudScale();
     }
 
     public void setDetailsHudScale(HudScale detailsHudScale) {
         update(settings -> settings.setDetailsHudScale(detailsHudScale));
+    }
+
+    public PanelWidthLimits detailsPanelWidthLimits() {
+        return this.settings.detailsPanelWidthLimits();
+    }
+
+    public PanelWidth detailsPanelMinimumWidth() {
+        return this.settings.detailsPanelMinimumWidth();
+    }
+
+    public void setDetailsPanelMinimumWidth(PanelWidth minimumWidth) {
+        update(settings -> settings.setDetailsPanelMinimumWidth(minimumWidth));
+    }
+
+    public PanelWidth detailsPanelMaximumWidth() {
+        return this.settings.detailsPanelMaximumWidth();
+    }
+
+    public void setDetailsPanelMaximumWidth(PanelWidth maximumWidth) {
+        update(settings -> settings.setDetailsPanelMaximumWidth(maximumWidth));
     }
 
     public ColorPalette palette() {
@@ -421,7 +515,7 @@ public final class LocatorHudConfig {
 
     private void update(Consumer<LocatorHudSettings> change) {
         change.accept(this.settings);
-        save();
+        this.saveDebouncer.request();
     }
 
     private void reportLoadResult(LocatorHudConfigStore.LoadResult result) {

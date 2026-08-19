@@ -3,12 +3,12 @@ package dev.mrfdev.locatorhud;
 import java.util.List;
 
 public enum CoordinateDisplayMode {
-    DECIMAL_ONLY("XYZ only", true, false),
-    BLOCK_ONLY("Block XYZ only", false, true),
-    BOTH("XYZ + block", true, true),
-    HIDDEN("None", false, false);
+    DECIMAL_ONLY("value.locatorhud.coordinate_display.xyz_only", true, false),
+    BLOCK_ONLY("value.locatorhud.coordinate_display.block_xyz_only", false, true),
+    BOTH("value.locatorhud.coordinate_display.xyz_and_block", true, true),
+    HIDDEN("value.locatorhud.coordinate_display.none", false, false);
 
-    private final String displayName;
+    private final String translationKey;
     private final boolean showsDecimal;
     private final boolean showsBlock;
     private static final List<CoordinateRowSegment> NO_SEGMENTS = List.of();
@@ -24,14 +24,14 @@ public enum CoordinateDisplayMode {
         CoordinateRowSegment.WORLD
     );
 
-    CoordinateDisplayMode(String displayName, boolean showsDecimal, boolean showsBlock) {
-        this.displayName = displayName;
+    CoordinateDisplayMode(String translationKey, boolean showsDecimal, boolean showsBlock) {
+        this.translationKey = translationKey;
         this.showsDecimal = showsDecimal;
         this.showsBlock = showsBlock;
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
 
     public boolean showsDecimal() {

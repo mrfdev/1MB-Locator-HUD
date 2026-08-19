@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.mrfdev.locatorhud.CoordinateDisplayMode;
+import dev.mrfdev.locatorhud.HudScale;
+import dev.mrfdev.locatorhud.PanelWidth;
+import dev.mrfdev.locatorhud.PanelWidthLimits;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -37,6 +40,10 @@ final class LocatorHudSavedSetupStoreTest {
         settings.setCoordinateDisplay(CoordinateDisplayMode.BOTH);
         settings.setBiomeEnabled(true);
         settings.setBiomeThemeOverrideEnabled(true);
+        settings.setAccessibilitySettingsEnabled(true);
+        settings.setHudScale(HudScale.HUGE);
+        settings.setMainPanelMinimumWidth(PanelWidth.PX_160);
+        settings.setMainPanelMaximumWidth(PanelWidth.PX_280);
 
         assertTrue(store.save(settings).wasSaved());
         settings.setBiomeEnabled(false);
@@ -50,6 +57,12 @@ final class LocatorHudSavedSetupStoreTest {
         );
         assertTrue(loaded.settings().orElseThrow().biomeEnabled());
         assertTrue(loaded.settings().orElseThrow().biomeThemeOverrideEnabled());
+        assertTrue(loaded.settings().orElseThrow().accessibilitySettingsEnabled());
+        assertSame(HudScale.HUGE, loaded.settings().orElseThrow().hudScale());
+        assertEquals(
+            new PanelWidthLimits(PanelWidth.PX_160, PanelWidth.PX_280),
+            loaded.settings().orElseThrow().mainPanelWidthLimits()
+        );
         assertEquals(
             this.temporaryDirectory.resolve("locator-hud-saved-setup.json"),
             store.path()

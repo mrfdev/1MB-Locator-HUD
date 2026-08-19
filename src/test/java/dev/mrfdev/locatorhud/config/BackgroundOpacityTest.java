@@ -11,7 +11,10 @@ final class BackgroundOpacityTest {
     @Test
     void exposesTheExpectedOpacityStopsInAscendingOrder() {
         assertEquals(7, BackgroundOpacity.values().length);
-        assertEquals("OFF (minimal)", BackgroundOpacity.OFF.displayName());
+        assertEquals(
+            "value.locatorhud.background_opacity.off",
+            BackgroundOpacity.OFF.translationKey()
+        );
         assertEquals(0, BackgroundOpacity.OFF.percentage());
         assertEquals(7, BackgroundOpacity.FAINT.percentage());
         assertEquals(24, BackgroundOpacity.LIGHT.percentage());

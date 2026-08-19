@@ -7,6 +7,7 @@ public record HudSnapshot(
     double x,
     double y,
     double z,
+    boolean reducedDebugInfo,
     String directionName,
     float yaw,
     float pitch,

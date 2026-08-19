@@ -2,6 +2,7 @@ package dev.mrfdev.locatorhud;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.mrfdev.locatorhud.config.ColorPalette;
 import java.util.Optional;
@@ -15,6 +16,7 @@ final class HudSnapshotTest {
             1.25D,
             64.0D,
             -3.5D,
+            true,
             "north",
             10.0F,
             -5.0F,
@@ -28,6 +30,7 @@ final class HudSnapshotTest {
         );
 
         assertSame(targets, snapshot.targets());
+        assertTrue(snapshot.reducedDebugInfo());
     }
 
     @Test
@@ -38,6 +41,7 @@ final class HudSnapshotTest {
                 0.0D,
                 0.0D,
                 0.0D,
+                false,
                 "north",
                 0.0F,
                 0.0F,
@@ -60,6 +64,7 @@ final class HudSnapshotTest {
                 0.0D,
                 0.0D,
                 0.0D,
+                false,
                 "north",
                 0.0F,
                 0.0F,

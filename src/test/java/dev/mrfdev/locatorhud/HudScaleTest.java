@@ -1,35 +1,49 @@
 package dev.mrfdev.locatorhud;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class HudScaleTest {
     @Test
-    void exposesAllFiveScaleChoicesInAscendingOrder() {
-        assertEquals(5, HudScale.values().length);
-        assertEquals("Extra small (60%)", HudScale.values()[0].displayName());
-        assertEquals(60, HudScale.values()[0].percentage());
-        assertEquals("Very small (70%)", HudScale.values()[1].displayName());
-        assertEquals(70, HudScale.values()[1].percentage());
-        assertEquals("Compact (80%)", HudScale.values()[2].displayName());
-        assertEquals(80, HudScale.values()[2].percentage());
-        assertEquals("Small (90%)", HudScale.values()[3].displayName());
-        assertEquals(90, HudScale.values()[3].percentage());
-        assertEquals("Normal (100%)", HudScale.values()[4].displayName());
-        assertEquals(100, HudScale.values()[4].percentage());
+    void exposesStandardAndAccessibilityScaleChoicesInAscendingOrder() {
+        assertEquals(
+            List.of(60, 70, 80, 90, 100, 110, 125, 150),
+            List.of(HudScale.values()).stream().map(HudScale::percentage).toList()
+        );
+        assertEquals(
+            List.of(
+                HudScale.EXTRA_SMALL,
+                HudScale.VERY_SMALL,
+                HudScale.COMPACT,
+                HudScale.SMALL,
+                HudScale.NORMAL
+            ),
+            HudScale.choices(false)
+        );
+        assertEquals(List.of(HudScale.values()), HudScale.choices(true));
+        assertEquals("value.locatorhud.hud_scale.large", HudScale.LARGE.translationKey());
+        assertEquals(
+            "value.locatorhud.hud_scale.extra_large",
+            HudScale.EXTRA_LARGE.translationKey()
+        );
+        assertEquals("value.locatorhud.hud_scale.huge", HudScale.HUGE.translationKey());
         assertSame(HudScale.COMPACT, HudScale.valueOf("COMPACT"));
         assertSame(HudScale.SMALL, HudScale.valueOf("SMALL"));
         assertSame(HudScale.NORMAL, HudScale.valueOf("NORMAL"));
     }
 
     @Test
-    void mapsAllFiveChoicesAcrossTheFullSliderTrack() {
-        assertEquals(0.0D, HudScale.EXTRA_SMALL.sliderPosition());
-        assertEquals(0.25D, HudScale.VERY_SMALL.sliderPosition());
-        assertEquals(0.5D, HudScale.COMPACT.sliderPosition());
-        assertEquals(0.75D, HudScale.SMALL.sliderPosition());
-        assertEquals(1.0D, HudScale.NORMAL.sliderPosition());
+    void identifiesAccessibilityOnlyChoicesAndProvidesASafeStandardFallback() {
+        assertFalse(HudScale.NORMAL.accessibilityOnly());
+        assertTrue(HudScale.LARGE.accessibilityOnly());
+        assertTrue(HudScale.EXTRA_LARGE.accessibilityOnly());
+        assertTrue(HudScale.HUGE.accessibilityOnly());
+        assertSame(HudScale.SMALL, HudScale.SMALL.standardFallback());
+        assertSame(HudScale.NORMAL, HudScale.HUGE.standardFallback());
     }
 }

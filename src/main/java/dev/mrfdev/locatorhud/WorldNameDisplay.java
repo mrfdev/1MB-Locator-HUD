@@ -1,18 +1,18 @@
 package dev.mrfdev.locatorhud;
 
 public enum WorldNameDisplay {
-    IN_FRONT("ON (in front)"),
-    BEHIND("ON (behind)"),
-    OFF("OFF");
+    IN_FRONT("value.locatorhud.world_name.in_front"),
+    BEHIND("value.locatorhud.world_name.behind"),
+    OFF("options.off");
 
-    private final String displayName;
+    private final String translationKey;
 
-    WorldNameDisplay(String displayName) {
-        this.displayName = displayName;
+    WorldNameDisplay(String translationKey) {
+        this.translationKey = translationKey;
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
 
     public boolean showsWorld() {

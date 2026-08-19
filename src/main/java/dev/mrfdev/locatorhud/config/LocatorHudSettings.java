@@ -4,6 +4,10 @@ import dev.mrfdev.locatorhud.CoordinateCopyFormat;
 import dev.mrfdev.locatorhud.CoordinateDisplayMode;
 import dev.mrfdev.locatorhud.CoordinatePrecision;
 import dev.mrfdev.locatorhud.HudScale;
+import dev.mrfdev.locatorhud.PanelGeometry.Offset;
+import dev.mrfdev.locatorhud.PanelPlacementPolicy;
+import dev.mrfdev.locatorhud.PanelWidth;
+import dev.mrfdev.locatorhud.PanelWidthLimits;
 import dev.mrfdev.locatorhud.TargetNameMode;
 import dev.mrfdev.locatorhud.ViewAnglePrecision;
 import dev.mrfdev.locatorhud.ViewDirectionDisplay;
@@ -12,9 +16,12 @@ import java.util.Objects;
 
 public final class LocatorHudSettings {
     private boolean enabled = true;
+    private boolean accessibilitySettingsEnabled = false;
     private boolean mainPanelEnabled = true;
     private boolean detailsPanelEnabled = true;
     private HudCorner corner = HudCorner.TOP_LEFT;
+    private int mainPanelOffsetX;
+    private int mainPanelOffsetY;
     private CoordinateDisplayMode coordinateDisplay = CoordinateDisplayMode.DECIMAL_ONLY;
     private CoordinatePrecision precision = CoordinatePrecision.ONE_DECIMAL;
     private boolean coordinateLensEnabled = false;
@@ -37,8 +44,14 @@ public final class LocatorHudSettings {
     private boolean autoHideEmptyTargetValues = false;
     private boolean targetLingerEnabled = false;
     private HudScale hudScale = HudScale.NORMAL;
+    private PanelWidth mainPanelMinimumWidth = PanelWidth.AUTO;
+    private PanelWidth mainPanelMaximumWidth = PanelWidth.AUTO;
     private HudCorner detailsCorner = HudCorner.TOP_RIGHT;
+    private int detailsPanelOffsetX;
+    private int detailsPanelOffsetY;
     private HudScale detailsHudScale = HudScale.COMPACT;
+    private PanelWidth detailsPanelMinimumWidth = PanelWidth.AUTO;
+    private PanelWidth detailsPanelMaximumWidth = PanelWidth.AUTO;
     private ColorPalette palette = ColorPalette.OCEAN;
     private boolean biomeThemeOverrideEnabled = false;
     private BackgroundOpacity backgroundOpacity = BackgroundOpacity.BALANCED;
@@ -69,6 +82,15 @@ public final class LocatorHudSettings {
         this.enabled = enabled;
     }
 
+    public boolean accessibilitySettingsEnabled() {
+        return this.accessibilitySettingsEnabled;
+    }
+
+    void setAccessibilitySettingsEnabled(boolean accessibilitySettingsEnabled) {
+        this.accessibilitySettingsEnabled = accessibilitySettingsEnabled;
+        normalizeAccessibilityScales();
+    }
+
     public boolean mainPanelEnabled() {
         return this.mainPanelEnabled;
     }
@@ -91,6 +113,17 @@ public final class LocatorHudSettings {
 
     void setCorner(HudCorner corner) {
         this.corner = corner;
+    }
+
+    public Offset mainPanelOffset() {
+        return new Offset(this.mainPanelOffsetX, this.mainPanelOffsetY);
+    }
+
+    void setMainPanelPlacement(HudCorner corner, Offset offset) {
+        this.corner = Objects.requireNonNull(corner, "corner");
+        Offset clamped = PanelPlacementPolicy.clampOffset(offset);
+        this.mainPanelOffsetX = clamped.x();
+        this.mainPanelOffsetY = clamped.y();
     }
 
     public CoordinateDisplayMode coordinateDisplay() {
@@ -261,6 +294,31 @@ public final class LocatorHudSettings {
         this.hudScale = hudScale;
     }
 
+    public PanelWidthLimits mainPanelWidthLimits() {
+        return new PanelWidthLimits(this.mainPanelMinimumWidth, this.mainPanelMaximumWidth);
+    }
+
+    public PanelWidth mainPanelMinimumWidth() {
+        return this.mainPanelMinimumWidth;
+    }
+
+    void setMainPanelMinimumWidth(PanelWidth minimumWidth) {
+        setMainPanelWidthLimits(mainPanelWidthLimits().withMinimum(minimumWidth));
+    }
+
+    public PanelWidth mainPanelMaximumWidth() {
+        return this.mainPanelMaximumWidth;
+    }
+
+    void setMainPanelMaximumWidth(PanelWidth maximumWidth) {
+        setMainPanelWidthLimits(mainPanelWidthLimits().withMaximum(maximumWidth));
+    }
+
+    private void setMainPanelWidthLimits(PanelWidthLimits limits) {
+        this.mainPanelMinimumWidth = limits.minimum();
+        this.mainPanelMaximumWidth = limits.maximum();
+    }
+
     public HudCorner detailsCorner() {
         return this.detailsCorner;
     }
@@ -269,12 +327,48 @@ public final class LocatorHudSettings {
         this.detailsCorner = detailsCorner;
     }
 
+    public Offset detailsPanelOffset() {
+        return new Offset(this.detailsPanelOffsetX, this.detailsPanelOffsetY);
+    }
+
+    void setDetailsPanelPlacement(HudCorner corner, Offset offset) {
+        this.detailsCorner = Objects.requireNonNull(corner, "corner");
+        Offset clamped = PanelPlacementPolicy.clampOffset(offset);
+        this.detailsPanelOffsetX = clamped.x();
+        this.detailsPanelOffsetY = clamped.y();
+    }
+
     public HudScale detailsHudScale() {
         return this.detailsHudScale;
     }
 
     void setDetailsHudScale(HudScale detailsHudScale) {
         this.detailsHudScale = detailsHudScale;
+    }
+
+    public PanelWidthLimits detailsPanelWidthLimits() {
+        return new PanelWidthLimits(this.detailsPanelMinimumWidth, this.detailsPanelMaximumWidth);
+    }
+
+    public PanelWidth detailsPanelMinimumWidth() {
+        return this.detailsPanelMinimumWidth;
+    }
+
+    void setDetailsPanelMinimumWidth(PanelWidth minimumWidth) {
+        setDetailsPanelWidthLimits(detailsPanelWidthLimits().withMinimum(minimumWidth));
+    }
+
+    public PanelWidth detailsPanelMaximumWidth() {
+        return this.detailsPanelMaximumWidth;
+    }
+
+    void setDetailsPanelMaximumWidth(PanelWidth maximumWidth) {
+        setDetailsPanelWidthLimits(detailsPanelWidthLimits().withMaximum(maximumWidth));
+    }
+
+    private void setDetailsPanelWidthLimits(PanelWidthLimits limits) {
+        this.detailsPanelMinimumWidth = limits.minimum();
+        this.detailsPanelMaximumWidth = limits.maximum();
     }
 
     public ColorPalette palette() {
@@ -328,9 +422,12 @@ public final class LocatorHudSettings {
     void replaceWith(LocatorHudSettings source) {
         Objects.requireNonNull(source, "source");
         this.enabled = source.enabled;
+        this.accessibilitySettingsEnabled = source.accessibilitySettingsEnabled;
         this.mainPanelEnabled = source.mainPanelEnabled;
         this.detailsPanelEnabled = source.detailsPanelEnabled;
         this.corner = source.corner;
+        this.mainPanelOffsetX = source.mainPanelOffsetX;
+        this.mainPanelOffsetY = source.mainPanelOffsetY;
         this.coordinateDisplay = source.coordinateDisplay;
         this.precision = source.precision;
         this.coordinateLensEnabled = source.coordinateLensEnabled;
@@ -351,8 +448,14 @@ public final class LocatorHudSettings {
         this.autoHideEmptyTargetValues = source.autoHideEmptyTargetValues;
         this.targetLingerEnabled = source.targetLingerEnabled;
         this.hudScale = source.hudScale;
+        this.mainPanelMinimumWidth = source.mainPanelMinimumWidth;
+        this.mainPanelMaximumWidth = source.mainPanelMaximumWidth;
         this.detailsCorner = source.detailsCorner;
+        this.detailsPanelOffsetX = source.detailsPanelOffsetX;
+        this.detailsPanelOffsetY = source.detailsPanelOffsetY;
         this.detailsHudScale = source.detailsHudScale;
+        this.detailsPanelMinimumWidth = source.detailsPanelMinimumWidth;
+        this.detailsPanelMaximumWidth = source.detailsPanelMaximumWidth;
         this.palette = source.palette;
         this.biomeThemeOverrideEnabled = source.biomeThemeOverrideEnabled;
         this.backgroundOpacity = source.backgroundOpacity;
@@ -366,6 +469,9 @@ public final class LocatorHudSettings {
         if (this.corner == null) {
             this.corner = HudCorner.TOP_LEFT;
         }
+        Offset mainOffset = PanelPlacementPolicy.clampOffset(mainPanelOffset());
+        this.mainPanelOffsetX = mainOffset.x();
+        this.mainPanelOffsetY = mainOffset.y();
         if (this.precision == CoordinatePrecision.BLOCK) {
             this.coordinateDisplay = CoordinateDisplayMode.BLOCK_ONLY;
             this.precision = CoordinatePrecision.ONE_DECIMAL;
@@ -392,12 +498,24 @@ public final class LocatorHudSettings {
         if (this.hudScale == null) {
             this.hudScale = HudScale.NORMAL;
         }
+        setMainPanelWidthLimits(PanelWidthLimits.normalized(
+            this.mainPanelMinimumWidth,
+            this.mainPanelMaximumWidth
+        ));
         if (this.detailsCorner == null) {
             this.detailsCorner = HudCorner.TOP_RIGHT;
         }
+        Offset detailsOffset = PanelPlacementPolicy.clampOffset(detailsPanelOffset());
+        this.detailsPanelOffsetX = detailsOffset.x();
+        this.detailsPanelOffsetY = detailsOffset.y();
         if (this.detailsHudScale == null) {
             this.detailsHudScale = HudScale.COMPACT;
         }
+        normalizeAccessibilityScales();
+        setDetailsPanelWidthLimits(PanelWidthLimits.normalized(
+            this.detailsPanelMinimumWidth,
+            this.detailsPanelMaximumWidth
+        ));
         if (this.targetNameMode == null) {
             this.targetNameMode = TargetNameMode.API_ACCURATE;
         }
@@ -409,6 +527,17 @@ public final class LocatorHudSettings {
         }
         if (this.detailsBackgroundOpacity == null) {
             this.detailsBackgroundOpacity = BackgroundOpacity.OFF;
+        }
+    }
+
+    private void normalizeAccessibilityScales() {
+        if (!this.accessibilitySettingsEnabled) {
+            if (this.hudScale != null) {
+                this.hudScale = this.hudScale.standardFallback();
+            }
+            if (this.detailsHudScale != null) {
+                this.detailsHudScale = this.detailsHudScale.standardFallback();
+            }
         }
     }
 

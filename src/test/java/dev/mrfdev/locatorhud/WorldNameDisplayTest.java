@@ -11,9 +11,15 @@ final class WorldNameDisplayTest {
     @Test
     void exposesTheRequestedChoicesInDisplayOrder() {
         assertEquals(3, WorldNameDisplay.values().length);
-        assertEquals("ON (in front)", WorldNameDisplay.values()[0].displayName());
-        assertEquals("ON (behind)", WorldNameDisplay.values()[1].displayName());
-        assertEquals("OFF", WorldNameDisplay.values()[2].displayName());
+        assertEquals(
+            "value.locatorhud.world_name.in_front",
+            WorldNameDisplay.values()[0].translationKey()
+        );
+        assertEquals(
+            "value.locatorhud.world_name.behind",
+            WorldNameDisplay.values()[1].translationKey()
+        );
+        assertEquals("options.off", WorldNameDisplay.values()[2].translationKey());
     }
 
     @Test

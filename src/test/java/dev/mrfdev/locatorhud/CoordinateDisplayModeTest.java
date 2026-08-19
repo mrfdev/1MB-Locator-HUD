@@ -11,6 +11,22 @@ import org.junit.jupiter.api.Test;
 final class CoordinateDisplayModeTest {
     @Test
     void exposesTheFourRequestedCoordinateLayouts() {
+        assertEquals(
+            "value.locatorhud.coordinate_display.xyz_only",
+            CoordinateDisplayMode.DECIMAL_ONLY.translationKey()
+        );
+        assertEquals(
+            "value.locatorhud.coordinate_display.block_xyz_only",
+            CoordinateDisplayMode.BLOCK_ONLY.translationKey()
+        );
+        assertEquals(
+            "value.locatorhud.coordinate_display.xyz_and_block",
+            CoordinateDisplayMode.BOTH.translationKey()
+        );
+        assertEquals(
+            "value.locatorhud.coordinate_display.none",
+            CoordinateDisplayMode.HIDDEN.translationKey()
+        );
         assertTrue(CoordinateDisplayMode.DECIMAL_ONLY.showsDecimal());
         assertFalse(CoordinateDisplayMode.DECIMAL_ONLY.showsBlock());
         assertTrue(CoordinateDisplayMode.BLOCK_ONLY.showsBlock());

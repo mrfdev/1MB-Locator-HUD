@@ -13,7 +13,10 @@ final class CoordinatePrecisionTest {
 
     @Test
     void noDecimalPrecisionRoundsWithoutBecomingBlockCoordinates() {
-        assertEquals("None", CoordinatePrecision.NONE.displayName());
+        assertEquals(
+            "value.locatorhud.coordinate_precision.none",
+            CoordinatePrecision.NONE.translationKey()
+        );
         assertEquals("12", CoordinatePrecision.NONE.format(12.49D));
         assertEquals("13", CoordinatePrecision.NONE.format(12.5D));
         assertEquals("-1", CoordinatePrecision.NONE.format(-1.1D));
@@ -23,8 +26,14 @@ final class CoordinatePrecisionTest {
 
     @Test
     void decimalPrecisionsUseStableDotFormatting() {
-        assertEquals("1 decimal", CoordinatePrecision.ONE_DECIMAL.displayName());
-        assertEquals("2 decimals", CoordinatePrecision.TWO_DECIMALS.displayName());
+        assertEquals(
+            "value.locatorhud.coordinate_precision.one_decimal",
+            CoordinatePrecision.ONE_DECIMAL.translationKey()
+        );
+        assertEquals(
+            "value.locatorhud.coordinate_precision.two_decimals",
+            CoordinatePrecision.TWO_DECIMALS.translationKey()
+        );
         assertEquals("12.3", CoordinatePrecision.ONE_DECIMAL.format(12.34D));
         assertEquals("12.35", CoordinatePrecision.TWO_DECIMALS.format(12.345D));
     }

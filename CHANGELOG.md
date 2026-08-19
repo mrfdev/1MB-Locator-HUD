@@ -1,5 +1,63 @@
 # Changelog
 
+## 1.47.0 — Snapshot Public Beta 4
+
+- Published 1.47.0 as the fourth public beta. This prerelease **requires testing** before broader recommendation.
+- Verified Minecraft 26.2's supported server-provided reduced-debug state: the login packet initializes `Player.isReducedDebugInfo()`, and vanilla entity events update it while connected.
+- Hide decimal and block coordinates, the Overworld–Nether lens, and all crosshair-target rows whenever that server state is active, while retaining non-location rows such as direction, biome, and observed movement speed.
+- Stop sampling block, fluid, and entity targets while reduced debug is active, clearing any lingered values immediately instead of merely hiding already collected target text.
+- Block the explicit F8 coordinate-copy action under reduced debug and show a local explanation without changing the clipboard.
+- Preserve every configured choice while the restriction is active so the selected coordinate, lens, and target settings return automatically when full debug information becomes available.
+- Kept the policy automatic and non-bypassable in Locator HUD, with no mixin, packet interception, custom networking, server plugin, or new configuration setting.
+- Added focused environment-neutral policy coverage and documented the restriction in usage, configuration, and privacy guidance.
+
+## 1.46.0 — development build
+
+- Added a default-off top-level Accessibility switch without adding another configuration row by pairing it with the main HUD switch.
+- When enabled, both size sliders add evenly spaced 110%, 125%, and 150% choices on top of the standard 60–100% range; existing scale-aware geometry keeps enlarged panels clamped to the screen.
+- Turning Accessibility off keeps ordinary sizes unchanged and safely returns any size above 100% to Normal (100%), avoiding a hidden active choice.
+- Added expanded keyboard/narrator usage guidance plus explicit accessible explanations when Decimal precision, Angle decimals, or Panel shadow is unavailable.
+- Kept color palettes and background controls independent: Accessibility does not force a contrast theme or alter either panel's background.
+- Added focused scale-choice, persistence, validation, Saved setup, and production-client configuration-switch coverage.
+
+## 1.45.0 — development build
+
+- Moved every player-facing configuration option value from embedded English text to stable translation keys while preserving all serialized enum identifiers and existing configuration compatibility.
+- Covered coordinate modes and precision, world-name and view-direction choices, panel scales and backgrounds, palette names, panel corners, presets, copy formats, target-name modes, and width choices.
+- Kept mixed-color state labels fully localizable by using translated templates for values such as `ON (in front)`, `ON (with details)`, and `OFF (minimal)`.
+- Added release-JAR verification that rejects production translation keys missing from the English fallback and production-client smoke coverage that resolves every option choice.
+- Documented the locale-file location and contribution rules for community translations.
+
+## 1.44.0 — development build
+
+- Added independent, paired minimum- and maximum-width controls for the main and details panels, with `Auto` as the backward-compatible default and fixed base widths from 120 through 320 GUI pixels.
+- Applied limits before each panel's Size scaling, expanded short content to its configured minimum, and shortened flexible row values to the configured maximum while retaining a small intrinsic floor for fixed labels.
+- Kept screen capacity as the final width ceiling, so a configured minimum cannot push a panel irrecoverably beyond the current display.
+- Prevented invalid ranges: moving either bound across its companion moves the companion to the same value, while crossed or unknown saved values validate to a safe range.
+- Preserved custom width limits through built-in presets and the Saved setup snapshot, with focused policy, persistence, migration, row-plan, and production-client UI regression coverage.
+
+## 1.43.0 — development build
+
+- Added a live `Place panels` editor that outlines both HUD panels and lets the player drag either one from the explicit configuration screen.
+- Added deterministic nearest-corner selection, six-pixel corner snapping, and independently persisted X/Y offsets clamped to ±64 GUI pixels so panels remain recoverable.
+- Added labeled fallback handles for disabled or empty panels, plus a focused `Reset positions` action that does not alter other HUD settings.
+- Kept the normal gameplay HUD non-interactive; mouse capture exists only while the dedicated placement editor is open.
+- Reused the production renderer's latest panel bounds and the existing geometry engine, with pure tests for corner selection, snapping, clamping, persistence, and recovery at screen edges.
+
+## 1.42.0 — development build
+
+- Added an `Open Locator HUD settings` key mapping that defaults to unbound, can be assigned under Locator HUD in Minecraft's Controls screen, and opens the full configuration screen without Mod Menu.
+- Centralized visibility, coordinate-copy, and settings key registration plus their explicit client actions in one focused controller.
+- Kept the settings action safe to invoke from gameplay or another screen and prevented it from nesting a second Locator HUD configuration screen.
+- Extended production-client smoke coverage to verify registration, the unbound default, direct settings access, and duplicate-screen protection with and without Mod Menu.
+
+## 1.41.0 — development build
+
+- Added client-thread configuration-save debouncing: rapid changes share a 10-tick quiet period while their live HUD preview remains immediate.
+- Made size and background sliders flush their final value on mouse release, and flush pending changes when the settings screen closes or Minecraft stops.
+- Kept preset, reset, and Saved setup restoration writes immediate and singular so grouped changes never persist intermediate states.
+- Added focused tests for debounce timing, quiet-period restart, explicit flush, and cancellation behavior.
+
 ## 1.40.0 — Snapshot Public Beta 3
 
 - Published the tested 1.40.0 build as the third public beta for community feedback.

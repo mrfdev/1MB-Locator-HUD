@@ -11,6 +11,9 @@ import dev.mrfdev.locatorhud.CoordinateCopyFormat;
 import dev.mrfdev.locatorhud.CoordinateDisplayMode;
 import dev.mrfdev.locatorhud.CoordinatePrecision;
 import dev.mrfdev.locatorhud.HudScale;
+import dev.mrfdev.locatorhud.PanelGeometry.Offset;
+import dev.mrfdev.locatorhud.PanelWidth;
+import dev.mrfdev.locatorhud.PanelWidthLimits;
 import dev.mrfdev.locatorhud.TargetNameMode;
 import dev.mrfdev.locatorhud.ViewDirectionDisplay;
 import dev.mrfdev.locatorhud.WorldNameDisplay;
@@ -39,6 +42,7 @@ final class LocatorHudConfigStoreTest {
         assertFalse(Files.exists(path));
         assertEquals(2, LocatorHudConfigStore.CURRENT_SCHEMA_VERSION);
         assertTrue(result.settings().enabled());
+        assertFalse(result.settings().accessibilitySettingsEnabled());
         assertFalse(result.settings().coordinateLensEnabled());
         assertSame(CoordinateCopyFormat.PLAIN, result.settings().coordinateCopyFormat());
         assertFalse(result.settings().biomeThemeOverrideEnabled());
@@ -49,6 +53,10 @@ final class LocatorHudConfigStoreTest {
         assertSame(WorldNameDisplay.BEHIND, result.settings().worldNameDisplay());
         assertSame(ViewDirectionDisplay.ON, result.settings().viewDirectionDisplay());
         assertSame(ColorPalette.OCEAN, result.settings().palette());
+        assertEquals(Offset.ZERO, result.settings().mainPanelOffset());
+        assertEquals(Offset.ZERO, result.settings().detailsPanelOffset());
+        assertEquals(PanelWidthLimits.AUTOMATIC, result.settings().mainPanelWidthLimits());
+        assertEquals(PanelWidthLimits.AUTOMATIC, result.settings().detailsPanelWidthLimits());
     }
 
     @Test
@@ -57,6 +65,7 @@ final class LocatorHudConfigStoreTest {
         LocatorHudConfigStore store = new LocatorHudConfigStore(path);
         LocatorHudSettings settings = LocatorHudSettings.defaults();
         settings.setEnabled(false);
+        settings.setAccessibilitySettingsEnabled(true);
         settings.setCoordinateDisplay(CoordinateDisplayMode.BOTH);
         settings.setPrecision(CoordinatePrecision.TWO_DECIMALS);
         settings.setCoordinateLensEnabled(true);
@@ -68,9 +77,16 @@ final class LocatorHudConfigStoreTest {
         settings.setTargetNameMode(TargetNameMode.FRIENDLY);
         settings.setWorldNameDisplay(WorldNameDisplay.IN_FRONT);
         settings.setViewDirectionDisplay(ViewDirectionDisplay.WITH_DETAILS);
-        settings.setHudScale(HudScale.SMALL);
+        settings.setHudScale(HudScale.HUGE);
+        settings.setDetailsHudScale(HudScale.EXTRA_LARGE);
         settings.setPalette(ColorPalette.DUO_TONE);
         settings.setDetailsBackgroundOpacity(BackgroundOpacity.STRONG);
+        settings.setMainPanelPlacement(HudCorner.BOTTOM_RIGHT, new Offset(-14, 22));
+        settings.setDetailsPanelPlacement(HudCorner.BOTTOM_LEFT, new Offset(31, -7));
+        settings.setMainPanelMinimumWidth(PanelWidth.PX_160);
+        settings.setMainPanelMaximumWidth(PanelWidth.PX_280);
+        settings.setDetailsPanelMinimumWidth(PanelWidth.PX_120);
+        settings.setDetailsPanelMaximumWidth(PanelWidth.PX_240);
 
         LocatorHudConfigStore.SaveResult saveResult = store.save(settings);
         LocatorHudConfigStore.LoadResult loadResult = store.load();
@@ -78,6 +94,7 @@ final class LocatorHudConfigStoreTest {
         assertSame(LocatorHudConfigStore.SaveStatus.SAVED, saveResult.status());
         assertSame(LocatorHudConfigStore.LoadStatus.LOADED, loadResult.status());
         assertFalse(loadResult.settings().enabled());
+        assertTrue(loadResult.settings().accessibilitySettingsEnabled());
         assertSame(CoordinateDisplayMode.BOTH, loadResult.settings().coordinateDisplay());
         assertSame(CoordinatePrecision.TWO_DECIMALS, loadResult.settings().precision());
         assertTrue(loadResult.settings().coordinateLensEnabled());
@@ -89,12 +106,26 @@ final class LocatorHudConfigStoreTest {
         assertSame(TargetNameMode.FRIENDLY, loadResult.settings().targetNameMode());
         assertSame(WorldNameDisplay.IN_FRONT, loadResult.settings().worldNameDisplay());
         assertSame(ViewDirectionDisplay.WITH_DETAILS, loadResult.settings().viewDirectionDisplay());
-        assertSame(HudScale.SMALL, loadResult.settings().hudScale());
+        assertSame(HudScale.HUGE, loadResult.settings().hudScale());
+        assertSame(HudScale.EXTRA_LARGE, loadResult.settings().detailsHudScale());
         assertSame(ColorPalette.DUO_TONE, loadResult.settings().palette());
         assertSame(BackgroundOpacity.STRONG, loadResult.settings().detailsBackgroundOpacity());
+        assertSame(HudCorner.BOTTOM_RIGHT, loadResult.settings().corner());
+        assertEquals(new Offset(-14, 22), loadResult.settings().mainPanelOffset());
+        assertSame(HudCorner.BOTTOM_LEFT, loadResult.settings().detailsCorner());
+        assertEquals(new Offset(31, -7), loadResult.settings().detailsPanelOffset());
+        assertEquals(
+            new PanelWidthLimits(PanelWidth.PX_160, PanelWidth.PX_280),
+            loadResult.settings().mainPanelWidthLimits()
+        );
+        assertEquals(
+            new PanelWidthLimits(PanelWidth.PX_120, PanelWidth.PX_240),
+            loadResult.settings().detailsPanelWidthLimits()
+        );
 
         String document = Files.readString(path, StandardCharsets.UTF_8);
         assertTrue(document.contains("\"schemaVersion\": 2"));
+        assertTrue(document.contains("\"accessibilitySettingsEnabled\": true"));
         assertTrue(document.contains("\"worldNameEnabled\": true"));
         assertTrue(document.contains("\"worldNameDisplay\": \"IN_FRONT\""));
         assertTrue(document.contains("\"viewDirectionEnabled\": true"));
@@ -106,6 +137,14 @@ final class LocatorHudConfigStoreTest {
         assertTrue(document.contains("\"movementSpeedEnabled\": true"));
         assertTrue(document.contains("\"targetLingerEnabled\": true"));
         assertTrue(document.contains("\"targetNameMode\": \"FRIENDLY\""));
+        assertTrue(document.contains("\"mainPanelOffsetX\": -14"));
+        assertTrue(document.contains("\"mainPanelOffsetY\": 22"));
+        assertTrue(document.contains("\"detailsPanelOffsetX\": 31"));
+        assertTrue(document.contains("\"detailsPanelOffsetY\": -7"));
+        assertTrue(document.contains("\"mainPanelMinimumWidth\": \"PX_160\""));
+        assertTrue(document.contains("\"mainPanelMaximumWidth\": \"PX_280\""));
+        assertTrue(document.contains("\"detailsPanelMinimumWidth\": \"PX_120\""));
+        assertTrue(document.contains("\"detailsPanelMaximumWidth\": \"PX_240\""));
     }
 
     @Test
@@ -135,6 +174,8 @@ final class LocatorHudConfigStoreTest {
         assertSame(ColorPalette.DUO_TONE, migrated.settings().palette());
         assertSame(BackgroundOpacity.SOFT, migrated.settings().backgroundOpacity());
         assertSame(BackgroundOpacity.STRONG, migrated.settings().detailsBackgroundOpacity());
+        assertEquals(PanelWidthLimits.AUTOMATIC, migrated.settings().mainPanelWidthLimits());
+        assertEquals(PanelWidthLimits.AUTOMATIC, migrated.settings().detailsPanelWidthLimits());
 
         assertTrue(store.save(migrated.settings()).wasSaved());
         assertSame(LocatorHudConfigStore.LoadStatus.LOADED, store.load().status());
@@ -171,6 +212,10 @@ final class LocatorHudConfigStoreTest {
               "coordinateDisplay": "NOT_A_MODE",
               "coordinateCopyFormat": "NOT_A_MODE",
               "targetNameMode": "NOT_A_MODE",
+              "mainPanelMinimumWidth": "NOT_A_WIDTH",
+              "mainPanelMaximumWidth": "NOT_A_WIDTH",
+              "detailsPanelMinimumWidth": "NOT_A_WIDTH",
+              "detailsPanelMaximumWidth": "NOT_A_WIDTH",
               "viewDirectionEnabled": false,
               "viewDirectionDisplay": "NOT_A_MODE",
               "palette": "NOT_A_PALETTE"
@@ -187,6 +232,53 @@ final class LocatorHudConfigStoreTest {
         assertSame(TargetNameMode.API_ACCURATE, result.settings().targetNameMode());
         assertSame(ViewDirectionDisplay.OFF, result.settings().viewDirectionDisplay());
         assertSame(ColorPalette.OCEAN, result.settings().palette());
+        assertEquals(PanelWidthLimits.AUTOMATIC, result.settings().mainPanelWidthLimits());
+        assertEquals(PanelWidthLimits.AUTOMATIC, result.settings().detailsPanelWidthLimits());
+    }
+
+    @Test
+    void repairsCrossedPanelWidthBoundsByKeepingTheConfiguredSafetyCap() throws IOException {
+        Path path = this.temporaryDirectory.resolve("locator-hud.json");
+        Files.writeString(path, """
+            {
+              "schemaVersion": 2,
+              "mainPanelMinimumWidth": "PX_280",
+              "mainPanelMaximumWidth": "PX_160",
+              "detailsPanelMinimumWidth": "PX_240",
+              "detailsPanelMaximumWidth": "PX_120"
+            }
+            """, StandardCharsets.UTF_8);
+
+        LocatorHudConfigStore.LoadResult result = new LocatorHudConfigStore(path).load();
+
+        assertSame(LocatorHudConfigStore.LoadStatus.LOADED, result.status());
+        assertEquals(
+            new PanelWidthLimits(PanelWidth.PX_160, PanelWidth.PX_160),
+            result.settings().mainPanelWidthLimits()
+        );
+        assertEquals(
+            new PanelWidthLimits(PanelWidth.PX_120, PanelWidth.PX_120),
+            result.settings().detailsPanelWidthLimits()
+        );
+    }
+
+    @Test
+    void hidesAccessibilityOnlyScalesWhenAccessibilitySettingsAreOff() throws IOException {
+        Path path = this.temporaryDirectory.resolve("locator-hud.json");
+        Files.writeString(path, """
+            {
+              "schemaVersion": 2,
+              "accessibilitySettingsEnabled": false,
+              "hudScale": "HUGE",
+              "detailsHudScale": "EXTRA_LARGE"
+            }
+            """, StandardCharsets.UTF_8);
+
+        LocatorHudSettings settings = new LocatorHudConfigStore(path).load().settings();
+
+        assertFalse(settings.accessibilitySettingsEnabled());
+        assertSame(HudScale.NORMAL, settings.hudScale());
+        assertSame(HudScale.NORMAL, settings.detailsHudScale());
     }
 
     @Test

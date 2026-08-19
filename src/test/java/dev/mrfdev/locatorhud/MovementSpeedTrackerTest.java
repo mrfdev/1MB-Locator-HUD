@@ -75,6 +75,7 @@ final class MovementSpeedTrackerTest {
             snapshotX,
             64.0D,
             0.0D,
+            false,
             "north",
             0.0F,
             0.0F,

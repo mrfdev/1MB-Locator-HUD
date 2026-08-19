@@ -4,6 +4,7 @@ import dev.mrfdev.locatorhud.config.HudCorner;
 import java.util.Objects;
 
 public final class PanelGeometry {
+    public static final int STACKED_PANEL_GAP = 4;
     private static final int NORMAL_SCALE_PERCENTAGE = 100;
 
     private PanelGeometry() {

@@ -3,22 +3,22 @@ package dev.mrfdev.locatorhud;
 import java.util.Locale;
 
 public enum ViewAnglePrecision {
-    WHOLE("OFF", 0),
-    ONE_DECIMAL("1 decimal", 1),
-    TWO_DECIMALS("2 decimals", 2);
+    WHOLE("options.off", 0),
+    ONE_DECIMAL("value.locatorhud.view_angle_precision.one_decimal", 1),
+    TWO_DECIMALS("value.locatorhud.view_angle_precision.two_decimals", 2);
 
-    private final String displayName;
+    private final String translationKey;
     private final int decimalPlaces;
     private final float factor;
 
-    ViewAnglePrecision(String displayName, int decimalPlaces) {
-        this.displayName = displayName;
+    ViewAnglePrecision(String translationKey, int decimalPlaces) {
+        this.translationKey = translationKey;
         this.decimalPlaces = decimalPlaces;
         this.factor = (float) Math.pow(10, decimalPlaces);
     }
 
-    public String displayName() {
-        return this.displayName;
+    public String translationKey() {
+        return this.translationKey;
     }
 
     public float round(float degrees) {
