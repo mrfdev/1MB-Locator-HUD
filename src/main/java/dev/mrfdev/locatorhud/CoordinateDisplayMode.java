@@ -70,8 +70,10 @@ public enum CoordinateDisplayMode {
             : NO_SEGMENTS;
     }
 
-    public int coreRows(WorldNameDisplay worldDisplay) {
-        return coordinateRows() + (worldUsesOwnRow(worldDisplay) ? 1 : 0) + 1;
+    public int coreRows(WorldNameDisplay worldDisplay, boolean viewRowVisible) {
+        return coordinateRows()
+            + (worldUsesOwnRow(worldDisplay) ? 1 : 0)
+            + (viewRowVisible ? 1 : 0);
     }
 
     private static List<CoordinateRowSegment> coordinateRowSegments(

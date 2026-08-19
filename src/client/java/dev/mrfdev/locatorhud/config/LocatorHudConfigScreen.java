@@ -21,10 +21,11 @@ import net.minecraft.network.chat.Component;
 
 public final class LocatorHudConfigScreen extends Screen {
     private static final int MAX_BUTTON_WIDTH = 240;
-    private static final int BUTTON_HEIGHT = 16;
-    private static final int ROW_SPACING = 16;
+    private static final int NORMAL_BUTTON_HEIGHT = 16;
+    private static final int COMPACT_BUTTON_HEIGHT = 15;
+    private static final int COMPACT_LAYOUT_THRESHOLD = 248;
     private static final int COLUMN_GAP = 4;
-    private static final int FOOTER_ROW = 12;
+    private static final int FOOTER_ROW = 13;
     private static final int KEY_COLOR = 0xD8D8D8;
     private static final int VALUE_COLOR = 0xFFFFFF;
     private static final int ENABLED_COLOR = 0x55FF55;
@@ -33,6 +34,8 @@ public final class LocatorHudConfigScreen extends Screen {
     private static final Duration TOOLTIP_DELAY = Duration.ofSeconds(1);
 
     private final Screen parent;
+    private int buttonHeight = NORMAL_BUTTON_HEIGHT;
+    private int rowSpacing = NORMAL_BUTTON_HEIGHT;
 
     public LocatorHudConfigScreen(Screen parent) {
         super(Component.translatable("screen.locatorhud.title"));
@@ -42,11 +45,14 @@ public final class LocatorHudConfigScreen extends Screen {
     @Override
     protected void init() {
         LocatorHudConfig config = LocatorHudClient.instance().config();
+        boolean compactLayout = this.height < COMPACT_LAYOUT_THRESHOLD;
+        this.buttonHeight = compactLayout ? COMPACT_BUTTON_HEIGHT : NORMAL_BUTTON_HEIGHT;
+        this.rowSpacing = this.buttonHeight;
         int buttonWidth = Math.min(MAX_BUTTON_WIDTH, (this.width - 12) / 2);
         int left = this.width / 2 - buttonWidth - COLUMN_GAP / 2;
         int right = this.width / 2 + COLUMN_GAP / 2;
-        int contentHeight = ROW_SPACING * FOOTER_ROW + 4 + BUTTON_HEIGHT;
-        int top = Math.max(20, (this.height - contentHeight) / 2);
+        int contentHeight = this.rowSpacing * FOOTER_ROW + 4 + this.buttonHeight;
+        int top = Math.max(compactLayout ? 18 : 20, (this.height - contentHeight) / 2);
 
         CycleButton<CoordinatePrecision> precisionButton = tooltipBuilder(
             CycleButton.builder(
@@ -62,7 +68,7 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 6),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.decimal_precision"),
             (button, value) -> config.setPrecision(value)
         );
@@ -76,9 +82,9 @@ public final class LocatorHudConfigScreen extends Screen {
             "tooltip.locatorhud.angle_decimals"
         ).withValues(ViewAnglePrecision.values()).create(
             left,
-            row(top, 9),
+            row(top, 10),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.angle_decimals"),
             (button, value) -> config.setViewAnglePrecision(value)
         );
@@ -91,7 +97,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 1),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.panel_shadow"),
             (button, enabled) -> config.setPanelShadow(enabled)
         );
@@ -113,7 +119,7 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 0),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.enabled"),
             (button, enabled) -> config.setEnabled(enabled)
         ));
@@ -127,7 +133,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 0),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.palette"),
             (button, value) -> config.setPalette(value)
         ));
@@ -138,7 +144,7 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 1),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.text_shadow"),
             (button, enabled) -> config.setTextShadow(enabled)
         ));
@@ -154,7 +160,7 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 3),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.main_panel_enabled"),
             (button, enabled) -> {
                 config.setMainPanelEnabled(enabled);
@@ -171,7 +177,7 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 4),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.position"),
             (button, value) -> config.setCorner(value)
         ));
@@ -185,7 +191,7 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 5),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.coordinate_display"),
             (button, value) -> {
                 config.setCoordinateDisplay(value);
@@ -203,18 +209,29 @@ public final class LocatorHudConfigScreen extends Screen {
             left,
             row(top, 7),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.world_name"),
             (button, value) -> config.setWorldNameDisplay(value)
+        ));
+        addCycleButton(tooltipBuilder(
+            onOffBuilder(config.viewDirectionEnabled()),
+            "tooltip.locatorhud.view_direction"
+        ).create(
+            left,
+            row(top, 8),
+            buttonWidth,
+            this.buttonHeight,
+            optionName("option.locatorhud.view_direction"),
+            (button, enabled) -> config.setViewDirectionEnabled(enabled)
         ));
         addCycleButton(tooltipBuilder(
             onOffBuilder(config.viewAnglesEnabled()),
             "tooltip.locatorhud.view_angles"
         ).create(
             left,
-            row(top, 8),
+            row(top, 9),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.view_angles"),
             (button, enabled) -> {
                 config.setViewAnglesEnabled(enabled);
@@ -224,18 +241,18 @@ public final class LocatorHudConfigScreen extends Screen {
         addCycleButton(anglePrecisionButton);
         addTooltipWidget(new HudScaleSlider(
             left,
-            row(top, 10),
+            row(top, 11),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.hud_size"),
             config.hudScale(),
             config::setHudScale
         ), "tooltip.locatorhud.hud_size");
         addTooltipWidget(new BackgroundOpacitySlider(
             left,
-            row(top, 11),
+            row(top, 12),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.background"),
             config.backgroundOpacity(),
             value -> {
@@ -251,7 +268,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 3),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.details_panel_enabled"),
             (button, enabled) -> {
                 config.setDetailsPanelEnabled(enabled);
@@ -268,7 +285,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 4),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.details_position"),
             (button, value) -> config.setDetailsCorner(value)
         ));
@@ -279,7 +296,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 5),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.biome"),
             (button, enabled) -> config.setBiomeEnabled(enabled)
         ));
@@ -290,7 +307,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 6),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.target_block"),
             (button, enabled) -> config.setTargetBlockEnabled(enabled)
         ));
@@ -301,7 +318,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 7),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.target_fluid"),
             (button, enabled) -> config.setTargetFluidEnabled(enabled)
         ));
@@ -312,7 +329,7 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 8),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.target_entity"),
             (button, enabled) -> config.setTargetEntityEnabled(enabled)
         ));
@@ -323,24 +340,24 @@ public final class LocatorHudConfigScreen extends Screen {
             right,
             row(top, 9),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.auto_hide_empty_values"),
             (button, enabled) -> config.setAutoHideEmptyTargetValues(enabled)
         ));
         addTooltipWidget(new HudScaleSlider(
             right,
-            row(top, 10),
+            row(top, 11),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.details_size"),
             config.detailsHudScale(),
             config::setDetailsHudScale
         ), "tooltip.locatorhud.details_size");
         addTooltipWidget(new BackgroundOpacitySlider(
             right,
-            row(top, 11),
+            row(top, 12),
             buttonWidth,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             optionName("option.locatorhud.details_background"),
             config.detailsBackgroundOpacity(),
             value -> {
@@ -352,10 +369,10 @@ public final class LocatorHudConfigScreen extends Screen {
         addTooltipWidget(Button.builder(Component.translatable("controls.reset"), button -> {
             config.reset();
             rebuildWidgets();
-        }).bounds(left, row(top, FOOTER_ROW) + 4, buttonWidth, BUTTON_HEIGHT).build(),
+        }).bounds(left, row(top, FOOTER_ROW) + 4, buttonWidth, this.buttonHeight).build(),
             "tooltip.locatorhud.reset");
         addTooltipWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
-            .bounds(right, row(top, FOOTER_ROW) + 4, buttonWidth, BUTTON_HEIGHT)
+            .bounds(right, row(top, FOOTER_ROW) + 4, buttonWidth, this.buttonHeight)
             .build(), "tooltip.locatorhud.done");
     }
 
@@ -369,7 +386,7 @@ public final class LocatorHudConfigScreen extends Screen {
             x,
             y,
             width,
-            BUTTON_HEIGHT,
+            this.buttonHeight,
             Component.translatable(translationKey).withColor(SECTION_COLOR),
             this.font
         ));
@@ -447,8 +464,8 @@ public final class LocatorHudConfigScreen extends Screen {
             || (config.detailsPanelEnabled() && config.detailsBackgroundOpacity().drawsPanel());
     }
 
-    private static int row(int top, int index) {
-        return top + ROW_SPACING * index;
+    private int row(int top, int index) {
+        return top + this.rowSpacing * index;
     }
 
     private static final class HudScaleSlider extends AbstractSliderButton {

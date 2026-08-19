@@ -48,6 +48,14 @@ public final class LocatorHudRenderer {
         HudLayout layout = HudLayout.forPanel(this.config.backgroundOpacity().drawsPanel());
         CoordinateDisplayMode coordinateDisplay = this.config.coordinateDisplay();
         WorldNameDisplay worldDisplay = this.config.worldNameDisplay();
+        List<ViewRowSegment> viewRowSegments = ViewRowSegment.forSettings(
+            this.config.viewDirectionEnabled(),
+            this.config.viewAnglesEnabled()
+        );
+        int rowCount = coordinateDisplay.coreRows(worldDisplay, !viewRowSegments.isEmpty());
+        if (rowCount == 0) {
+            return null;
+        }
         boolean worldWithDecimal = coordinateDisplay.worldSharesDecimalRow(worldDisplay);
         boolean worldWithBlock = coordinateDisplay.worldSharesBlockRow(worldDisplay);
         boolean standaloneWorld = coordinateDisplay.worldUsesOwnRow(worldDisplay);
@@ -59,9 +67,15 @@ public final class LocatorHudRenderer {
         String blockZ = CoordinatePrecision.BLOCK.format(player.getZ());
         Identifier dimension = client.level.dimension().identifier();
         String world = WorldNameFormatter.fromIdentifier(dimension.getNamespace(), dimension.getPath());
-        String direction = DirectionNameFormatter.titleCase(player.getDirection().getName());
-        String horizontalAngle = ViewAngleFormatter.horizontal(player.getYRot(), this.config.viewAnglePrecision());
-        String verticalAngle = ViewAngleFormatter.vertical(player.getXRot(), this.config.viewAnglePrecision());
+        String direction = this.config.viewDirectionEnabled()
+            ? DirectionNameFormatter.titleCase(player.getDirection().getName())
+            : "";
+        String horizontalAngle = this.config.viewAnglesEnabled()
+            ? ViewAngleFormatter.horizontal(player.getYRot(), this.config.viewAnglePrecision())
+            : "";
+        String verticalAngle = this.config.viewAnglesEnabled()
+            ? ViewAngleFormatter.vertical(player.getXRot(), this.config.viewAnglePrecision())
+            : "";
 
         int decimalCoordinatesWidth = segmentWidth(font, "X", decimalX)
             + layout.segmentGap()
@@ -88,16 +102,18 @@ public final class LocatorHudRenderer {
             + (worldWithDecimal ? font.width(layout.coordinateDivider()) + worldWidth : 0);
         int blockWidth = blockCoordinatesWidth
             + (worldWithBlock ? font.width(layout.coordinateDivider()) + worldWidth : 0);
-        int directionWidth = font.width(direction);
-        if (this.config.viewAnglesEnabled()) {
-            directionWidth += font.width(" (")
-                + font.width(horizontalAngle)
-                + font.width(layout.detailDivider())
-                + font.width(verticalAngle)
-                + font.width(")");
+        int viewRowWidth = 0;
+        for (ViewRowSegment segment : viewRowSegments) {
+            viewRowWidth += font.width(viewRowText(
+                segment,
+                direction,
+                horizontalAngle,
+                layout.detailDivider(),
+                verticalAngle
+            ));
         }
 
-        int contentWidth = directionWidth;
+        int contentWidth = viewRowWidth;
         if (coordinateDisplay.showsDecimal()) {
             contentWidth = Math.max(contentWidth, decimalWidth);
         }
@@ -108,7 +124,7 @@ public final class LocatorHudRenderer {
             contentWidth = Math.max(contentWidth, worldWidth);
         }
         int panelWidth = layout.panelWidth(contentWidth);
-        int panelHeight = layout.panelHeight(font.lineHeight, coordinateDisplay.coreRows(worldDisplay));
+        int panelHeight = layout.panelHeight(font.lineHeight, rowCount);
         PanelPlacement placement = placePanel(
             graphics,
             this.config.corner(),
@@ -149,7 +165,8 @@ public final class LocatorHudRenderer {
                 world,
                 direction,
                 horizontalAngle,
-                verticalAngle
+                verticalAngle,
+                viewRowSegments
             );
         } finally {
             graphics.pose().popMatrix();
@@ -285,7 +302,8 @@ public final class LocatorHudRenderer {
         String world,
         String direction,
         String horizontalAngle,
-        String verticalAngle
+        String verticalAngle,
+        List<ViewRowSegment> viewRowSegments
     ) {
         int textX = layout.accentWidth() + layout.horizontalPadding();
         int rowY = layout.verticalPadding();
@@ -328,14 +346,40 @@ public final class LocatorHudRenderer {
             rowY += font.lineHeight + layout.rowGap();
         }
 
-        int cursorX = drawText(graphics, font, direction, textX, rowY, palette.direction());
-        if (this.config.viewAnglesEnabled()) {
-            cursorX = drawText(graphics, font, " (", cursorX, rowY, palette.secondary());
-            cursorX = drawText(graphics, font, horizontalAngle, cursorX, rowY, palette.primary());
-            cursorX = drawText(graphics, font, layout.detailDivider(), cursorX, rowY, palette.accent());
-            cursorX = drawText(graphics, font, verticalAngle, cursorX, rowY, palette.primary());
-            drawText(graphics, font, ")", cursorX, rowY, palette.secondary());
+        int cursorX = textX;
+        for (ViewRowSegment segment : viewRowSegments) {
+            String text = viewRowText(
+                segment,
+                direction,
+                horizontalAngle,
+                layout.detailDivider(),
+                verticalAngle
+            );
+            int color = switch (segment) {
+                case DIRECTION -> palette.direction();
+                case OPEN_PARENTHESIS, CLOSE_PARENTHESIS -> palette.secondary();
+                case HORIZONTAL_ANGLE, VERTICAL_ANGLE -> palette.primary();
+                case DIVIDER -> palette.accent();
+            };
+            cursorX = drawText(graphics, font, text, cursorX, rowY, color);
         }
+    }
+
+    private static String viewRowText(
+        ViewRowSegment segment,
+        String direction,
+        String horizontalAngle,
+        String divider,
+        String verticalAngle
+    ) {
+        return switch (segment) {
+            case DIRECTION -> direction;
+            case OPEN_PARENTHESIS -> " (";
+            case HORIZONTAL_ANGLE -> horizontalAngle;
+            case DIVIDER -> divider;
+            case VERTICAL_ANGLE -> verticalAngle;
+            case CLOSE_PARENTHESIS -> ")";
+        };
     }
 
     private void drawCoordinateWorldRow(

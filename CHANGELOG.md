@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.23.0 — in development
+
+- Added an independent, default-on toggle for showing the cardinal view direction while keeping yaw and pitch separately configurable.
+
 ## 1.22.0 — Snapshot Public Beta 2
 
 - Published the tested 1.22.0 build as the second public beta for community feedback.

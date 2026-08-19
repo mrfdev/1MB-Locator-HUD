@@ -41,21 +41,31 @@ final class CoordinateDisplayModeTest {
     }
 
     @Test
-    void countsRowsWithAndWithoutTheWorld() {
+    void countsRowsWithAndWithoutTheWorldOrViewRow() {
         for (WorldNameDisplay display : new WorldNameDisplay[] {
             WorldNameDisplay.IN_FRONT,
             WorldNameDisplay.BEHIND
         }) {
-            assertEquals(2, CoordinateDisplayMode.DECIMAL_ONLY.coreRows(display));
-            assertEquals(3, CoordinateDisplayMode.BOTH.coreRows(display));
-            assertEquals(2, CoordinateDisplayMode.BLOCK_ONLY.coreRows(display));
-            assertEquals(2, CoordinateDisplayMode.HIDDEN.coreRows(display));
+            assertEquals(2, CoordinateDisplayMode.DECIMAL_ONLY.coreRows(display, true));
+            assertEquals(3, CoordinateDisplayMode.BOTH.coreRows(display, true));
+            assertEquals(2, CoordinateDisplayMode.BLOCK_ONLY.coreRows(display, true));
+            assertEquals(2, CoordinateDisplayMode.HIDDEN.coreRows(display, true));
+
+            assertEquals(1, CoordinateDisplayMode.DECIMAL_ONLY.coreRows(display, false));
+            assertEquals(2, CoordinateDisplayMode.BOTH.coreRows(display, false));
+            assertEquals(1, CoordinateDisplayMode.BLOCK_ONLY.coreRows(display, false));
+            assertEquals(1, CoordinateDisplayMode.HIDDEN.coreRows(display, false));
         }
 
-        assertEquals(2, CoordinateDisplayMode.DECIMAL_ONLY.coreRows(WorldNameDisplay.OFF));
-        assertEquals(3, CoordinateDisplayMode.BOTH.coreRows(WorldNameDisplay.OFF));
-        assertEquals(2, CoordinateDisplayMode.BLOCK_ONLY.coreRows(WorldNameDisplay.OFF));
-        assertEquals(1, CoordinateDisplayMode.HIDDEN.coreRows(WorldNameDisplay.OFF));
+        assertEquals(2, CoordinateDisplayMode.DECIMAL_ONLY.coreRows(WorldNameDisplay.OFF, true));
+        assertEquals(3, CoordinateDisplayMode.BOTH.coreRows(WorldNameDisplay.OFF, true));
+        assertEquals(2, CoordinateDisplayMode.BLOCK_ONLY.coreRows(WorldNameDisplay.OFF, true));
+        assertEquals(1, CoordinateDisplayMode.HIDDEN.coreRows(WorldNameDisplay.OFF, true));
+
+        assertEquals(1, CoordinateDisplayMode.DECIMAL_ONLY.coreRows(WorldNameDisplay.OFF, false));
+        assertEquals(2, CoordinateDisplayMode.BOTH.coreRows(WorldNameDisplay.OFF, false));
+        assertEquals(1, CoordinateDisplayMode.BLOCK_ONLY.coreRows(WorldNameDisplay.OFF, false));
+        assertEquals(0, CoordinateDisplayMode.HIDDEN.coreRows(WorldNameDisplay.OFF, false));
     }
 
     @Test

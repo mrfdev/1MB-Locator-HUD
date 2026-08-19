@@ -29,6 +29,7 @@ public final class LocatorHudConfig {
     // Retained as a serialized mirror so older versions can still read this configuration.
     private boolean worldNameEnabled = true;
     private WorldNameDisplay worldNameDisplay;
+    private boolean viewDirectionEnabled = true;
     private boolean viewAnglesEnabled = false;
     private ViewAnglePrecision viewAnglePrecision = ViewAnglePrecision.WHOLE;
     private boolean biomeEnabled = false;
@@ -95,6 +96,7 @@ public final class LocatorHudConfig {
         this.precision = defaults.precision;
         this.worldNameEnabled = defaults.worldNameEnabled;
         this.worldNameDisplay = defaults.worldNameDisplay;
+        this.viewDirectionEnabled = defaults.viewDirectionEnabled;
         this.viewAnglesEnabled = defaults.viewAnglesEnabled;
         this.viewAnglePrecision = defaults.viewAnglePrecision;
         this.biomeEnabled = defaults.biomeEnabled;
@@ -188,6 +190,15 @@ public final class LocatorHudConfig {
     public void setWorldNameDisplay(WorldNameDisplay worldNameDisplay) {
         this.worldNameDisplay = worldNameDisplay != null ? worldNameDisplay : WorldNameDisplay.BEHIND;
         this.worldNameEnabled = this.worldNameDisplay.showsWorld();
+        save();
+    }
+
+    public boolean viewDirectionEnabled() {
+        return this.viewDirectionEnabled;
+    }
+
+    public void setViewDirectionEnabled(boolean viewDirectionEnabled) {
+        this.viewDirectionEnabled = viewDirectionEnabled;
         save();
     }
 

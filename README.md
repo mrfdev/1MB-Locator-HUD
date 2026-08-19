@@ -10,14 +10,15 @@ The mod was made for [1MoreBlock.com](https://www.1moreblock.com/), a public Jav
 
 - **Current release:** [1MB Locator HUD 1.22.0 — Snapshot Public Beta 2](https://github.com/mrfdev/1MB-Locator-HUD/releases/tag/v1.22.0), tested and published for community feedback.
 - **Previous beta:** [1MB Locator HUD 1.12.1 — Snapshot Public Beta 1](https://github.com/mrfdev/1MB-Locator-HUD/releases/tag/v1.12.1).
+- **In development:** 1.23.0.
 
-The features, configuration reference, screenshots, installation instructions, and build instructions below describe version 1.22.0. Please report beta feedback and problems through the [issue tracker](https://github.com/mrfdev/1MB-Locator-HUD/issues).
+The feature, configuration, and build references below track the unreleased 1.23.0 development source. Installation and download links continue to point to the tested 1.22.0 Snapshot Public Beta 2. Please report beta feedback and problems through the [issue tracker](https://github.com/mrfdev/1MB-Locator-HUD/issues).
 
 ## Features
 
 - Rounded whole-number XYZ, one- or two-decimal XYZ, containing-block XYZ, both coordinate rows, or neither.
 - Optional friendly world/dimension name before or after the first coordinate row. When coordinates are hidden, the world name uses its own row.
-- Title-case cardinal direction with optional compact yaw and pitch in whole, one-decimal, or two-decimal degrees.
+- Independently toggleable title-case cardinal direction and compact yaw/pitch angles in whole, one-decimal, or two-decimal degrees.
 - Optional biome and crosshair-target block, fluid, and entity rows. Auto-hide can suppress empty target rows while leaving an enabled biome row visible.
 - Independently visible and positioned main and details panels. If both use the same corner, the details panel stacks vertically with the main panel.
 - Independent five-stop size sliders at 60%, 70%, 80%, 90%, and 100% for each panel.
@@ -63,7 +64,8 @@ Without Mod Menu, the HUD still runs normally with its defaults or previously sa
 | Main | Coordinate display | XYZ only | XYZ only, block XYZ only, XYZ plus block, or none. |
 | Main | Decimal precision | 1 decimal | `None` rounds XYZ to whole numbers; one or two decimal places are also available. This control is available when coordinate display includes XYZ. |
 | Main | World name | `ON (behind)` | `ON (in front)`, `ON (behind)`, or `OFF`. |
-| Main | View angles | `OFF` | Adds yaw and pitch beside the cardinal direction. |
+| Main | View direction | `ON` | Shows the title-case cardinal direction (North, South, East, or West). |
+| Main | View angles | `OFF` | Shows compact yaw and pitch values; when view direction is also enabled, they appear beside it. |
 | Main | Angle decimals | `OFF` | Whole degrees when `OFF`, or one or two decimal places; available when view angles are on. |
 | Main | Main size | Normal (100%) | Snaps to 60%, 70%, 80%, 90%, or 100%. |
 | Main | Main background | Balanced (72%) | `OFF`, 7%, 24%, 55%, 72%, 88%, or 100%. |
@@ -102,8 +104,8 @@ On Windows, use `gradlew.bat clean build` instead.
 The runtime and source JARs are written to:
 
 ```text
-build/libs/1MB-Locator-HUD-1.22.0.jar
-build/libs/1MB-Locator-HUD-1.22.0-sources.jar
+build/libs/1MB-Locator-HUD-1.23.0.jar
+build/libs/1MB-Locator-HUD-1.23.0-sources.jar
 ```
 
 To run only the full unit-test suite:

@@ -29,3 +29,13 @@
 - Author shown to users: `mrfloris`
 - License: All Rights Reserved
 - Public repository: `https://github.com/mrfdev/1MB-Locator-HUD`
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs are tracked in GitHub Issues for `mrfdev/1MB-Locator-HUD`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repository using an optional root `CONTEXT.md` and system-wide ADRs under `docs/adr/`. See `docs/agents/domain.md`.

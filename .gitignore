@@ -27,12 +27,37 @@ mods/
 /config/
 .fabric/
 
+# Minecraft state accidentally created at the repository root
+/options.txt
+/optionsof.txt
+/servers.dat
+/servers.dat_old
+/usercache.json
+/usernamecache.json
+/hotbar.nbt
+/command_history.txt
+/realms_persistence.json
+/launcher_profiles.json
+/eula.txt
+/server.properties
+/ops.json
+/whitelist.json
+/banned-players.json
+/banned-ips.json
+/world/
+/world_nether/
+/world_the_end/
+
 .env
 .env.*
 !.env.example
 local.properties
 *.key
 *.pem
+*.keystore
+*.jks
+*.p12
+*.pfx
 
 .DS_Store
 ._*
