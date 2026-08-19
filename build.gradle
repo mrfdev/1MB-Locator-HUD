@@ -1,3 +1,10 @@
+import groovy.json.JsonSlurper
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.security.MessageDigest
+import java.util.zip.ZipFile
+import net.fabricmc.loom.task.prod.ClientProductionRunTask
+
 plugins {
     id 'net.fabricmc.fabric-loom' version "${loom_version}"
 }
@@ -5,8 +12,15 @@ plugins {
 group = project.maven_group
 version = project.mod_version
 
+def archiveName = '1MB-Locator-HUD'
+def modVersion = project.mod_version.toString()
+def loaderVersion = project.loader_version.toString()
+def minecraftVersion = project.minecraft_version.toString()
+def fabricApiVersion = project.fabric_api_version.toString()
+def modMenuVersion = project.modmenu_version.toString()
+
 base {
-    archivesName = '1MB-Locator-HUD'
+    archivesName = archiveName
 }
 
 repositories {
@@ -24,7 +38,9 @@ java {
 tasks.withType(JavaCompile).configureEach {
     options.release = 25
     options.encoding = 'UTF-8'
-    options.compilerArgs.add('-Xlint:deprecation')
+    // Gson's published annotations trigger third-party classfile warnings on JDK 25.
+    // Keep every source-level lint category strict while excluding dependency metadata noise.
+    options.compilerArgs.addAll('-Xlint:all,-classfile', '-Werror')
 }
 
 tasks.withType(Test).configureEach {
@@ -42,6 +58,20 @@ loom {
     }
 }
 
+fabricApi {
+    configureTests {
+        createSourceSet = true
+        modId = 'locatorhud-gametest'
+        enableGameTests = false
+        enableClientGameTests = true
+        eula = true
+    }
+}
+
+configurations {
+    modMenuProductionRuntime
+}
+
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     implementation "net.fabricmc:fabric-loader:${project.loader_version}"
@@ -50,19 +80,211 @@ dependencies {
     clientCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
     clientRuntimeOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
 
+    productionRuntimeMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+    modMenuProductionRuntime "com.terraformersmc:modmenu:${project.modmenu_version}"
+
     testImplementation platform('org.junit:junit-bom:6.0.3')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 processResources {
-    inputs.property 'version', project.version
-    inputs.property 'fabric_api_version', project.fabric_api_version
+    def resourceProperties = [
+        version: project.version.toString(),
+        fabric_api_version: project.fabric_api_version.toString()
+    ]
+    inputs.properties resourceProperties
 
     filesMatching('fabric.mod.json') {
-        expand([
-            version: project.version,
-            fabric_api_version: project.fabric_api_version
-        ])
+        expand resourceProperties
     }
+}
+
+def runtimeJar = layout.buildDirectory.file("libs/${archiveName}-${modVersion}.jar")
+def checksumFile = layout.buildDirectory.file("libs/${archiveName}-${modVersion}.jar.sha256")
+
+tasks.register('verifyReleaseJar') {
+    group = 'verification'
+    description = 'Verifies the runtime JAR name, required resources, and client-only metadata.'
+    dependsOn tasks.named('jar')
+    inputs.file(runtimeJar)
+
+    doLast {
+        File archive = runtimeJar.get().asFile
+        String expectedName = "${archiveName}-${modVersion}.jar"
+        if (archive.name != expectedName) {
+            throw new GradleException("Expected runtime JAR ${expectedName}, found ${archive.name}")
+        }
+
+        new ZipFile(archive).withCloseable { zip ->
+            List<String> requiredEntries = [
+                'fabric.mod.json',
+                'assets/locatorhud/icon.png',
+                'assets/locatorhud/lang/en_us.json'
+            ]
+            requiredEntries.each { entryName ->
+                if (zip.getEntry(entryName) == null) {
+                    throw new GradleException("Runtime JAR is missing ${entryName}")
+                }
+            }
+            if (zip.getEntry('dev/mrfdev/locatorhud/LocatorHudClientSmokeTest.class') != null) {
+                throw new GradleException('Runtime JAR must not contain the isolated smoke-test mod')
+            }
+
+            String metadataText = zip.getInputStream(zip.getEntry('fabric.mod.json'))
+                .getText(StandardCharsets.UTF_8.name())
+            Map metadata = (Map) new JsonSlurper().parseText(metadataText)
+            if (metadata.id != 'locatorhud' || metadata.version != modVersion) {
+                throw new GradleException('Runtime JAR has unexpected mod identity or version')
+            }
+            if (metadata.environment != 'client') {
+                throw new GradleException('Runtime JAR must declare a client-only environment')
+            }
+            Set<String> entrypointTypes = ((Map) metadata.entrypoints).keySet() as Set<String>
+            if (entrypointTypes != ['client', 'modmenu'] as Set<String>) {
+                throw new GradleException("Unexpected Fabric entrypoint types: ${entrypointTypes}")
+            }
+
+            Map depends = (Map) metadata.depends
+            Map suggests = (Map) metadata.suggests
+            Map expectedDepends = [
+                fabricloader: ">=${loaderVersion}",
+                minecraft: "~${minecraftVersion}",
+                java: '>=25',
+                'fabric-api': ">=${fabricApiVersion}"
+            ]
+            if (depends != expectedDepends) {
+                throw new GradleException("Unexpected required dependencies: ${depends}")
+            }
+            if (suggests != [modmenu: ">=${modMenuVersion}"]) {
+                throw new GradleException("Unexpected suggested dependencies: ${suggests}")
+            }
+        }
+    }
+}
+
+tasks.register('generateReleaseChecksum') {
+    group = 'build'
+    description = 'Writes a SHA-256 checksum beside the runtime JAR.'
+    dependsOn tasks.named('jar')
+    inputs.file(runtimeJar)
+    outputs.file(checksumFile)
+
+    doLast {
+        File archive = runtimeJar.get().asFile
+        byte[] digest = MessageDigest.getInstance('SHA-256').digest(Files.readAllBytes(archive.toPath()))
+        String checksum = digest.collect { byte value ->
+            String.format('%02x', value & 0xff)
+        }.join()
+        Files.writeString(
+            checksumFile.get().asFile.toPath(),
+            "${checksum}  ${archive.name}${System.lineSeparator()}",
+            StandardCharsets.UTF_8
+        )
+    }
+}
+
+def policySources = files(
+    fileTree('src/main/java') { include '**/*.java' },
+    fileTree('src/client/java') { include '**/*.java' }
+)
+def buildDefinitionFile = layout.projectDirectory.file('build.gradle')
+def fabricMetadataFile = layout.projectDirectory.file('src/main/resources/fabric.mod.json')
+
+tasks.register('verifyClientOnlyPolicy') {
+    group = 'verification'
+    description = 'Rejects accidental networking, telemetry, commands, server APIs, and coordinate logging.'
+    inputs.files(policySources)
+    inputs.files(buildDefinitionFile, fabricMetadataFile)
+
+    doLast {
+        Map<String, java.util.regex.Pattern> forbiddenSourcePatterns = [
+            'custom networking API': ~/(?i)\b(ClientPlayNetworking|ServerPlayNetworking|ClientConfigurationNetworking|ServerConfigurationNetworking|PayloadTypeRegistry|CustomPayload|registerGlobalReceiver)\b/,
+            'remote networking API': ~/(?i)\b(java\.net\.|javax\.net\.|okhttp3\.|retrofit2\.|org\.apache\.hc\.|io\.ktor\.client\.|net\.minecraft\.network\.protocol\.)/,
+            'remote URL literal': ~/(?i)\bhttps?:\/\//,
+            'custom command registration': ~/(?i)\b(ClientCommandRegistrationCallback|CommandRegistrationCallback|ClientCommandManager|Commands\.literal)\b/,
+            'server-only API': ~/(?i)\b(net\.minecraft\.server\.|org\.bukkit\.|io\.papermc\.|com\.velocitypowered\.)/,
+            'telemetry or analytics API': ~/(?i)\b(OpenTelemetry|Sentry|TelemetryManager|AnalyticsClient|MetricsReporter|io\.sentry\.|com\.segment\.|com\.mixpanel\.)\b/,
+            'direct console logging': ~/(?i)\b(System\.(?:out|err)\.|printStackTrace\s*\()/
+        ]
+        List<String> violations = []
+        policySources.files.sort().each { file ->
+            String source = Files.readString(file.toPath(), StandardCharsets.UTF_8)
+            forbiddenSourcePatterns.each { label, pattern ->
+                if (pattern.matcher(source).find()) {
+                    violations.add("${file}: ${label}")
+                }
+            }
+            def logCall = ~/(?i)\b(?:LOGGER|logger)\s*\.\s*(?:trace|debug|info|warn|error|atTrace|atDebug|atInfo|atWarn|atError)\b/
+            if (file.name != 'LocatorHudConfig.java' && logCall.matcher(source).find()) {
+                violations.add("${file}: logging is restricted to configuration lifecycle diagnostics")
+            }
+            def coordinateLog = ~/(?is)\b(?:LOGGER|logger)\s*\.\s*(?:trace|debug|info|warn|error|atTrace|atDebug|atInfo|atWarn|atError)\s*\([^;]{0,1000}(?:\bcoordinate\b|\bposition\b|\byaw\b|\bpitch\b|\bplayer\b|\bbiome\b|\btarget\b|[,\s(][xyz][,\s)])/
+            if (coordinateLog.matcher(source).find()) {
+                violations.add("${file}: possible player-location logging")
+            }
+        }
+
+        String declaredDependencies = Files.readAllLines(
+            buildDefinitionFile.asFile.toPath(),
+            StandardCharsets.UTF_8
+        ).findAll { line ->
+            line ==~ /^\s*(?:api|implementation|compileOnly|runtimeOnly|clientCompileOnly|clientRuntimeOnly|productionRuntimeMods|modMenuProductionRuntime)\s+.+$/
+        }.join('\n')
+        def forbiddenDependency = ~/(?i)\b(paper|bukkit|spigot|velocity|okhttp|retrofit|apache-http|httpclient|ktor-client|netty|websocket|sentry|opentelemetry|segment|mixpanel)\b/
+        if (forbiddenDependency.matcher(declaredDependencies).find()) {
+            violations.add('build.gradle: forbidden server, networking, or telemetry dependency')
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException('Client-only policy violations:\n - ' + violations.join('\n - '))
+        }
+    }
+}
+
+def xvfbInCi = providers.environmentVariable('CI')
+    .map { value -> value.equalsIgnoreCase('true') }
+    .orElse(false)
+
+def gametestJar = tasks.register('gametestJar', Jar) {
+    group = 'verification'
+    description = 'Assembles the isolated client smoke-test mod.'
+    archiveClassifier = 'gametest'
+    destinationDirectory = layout.buildDirectory.dir('gametest')
+    from sourceSets.gametest.output
+}
+
+tasks.register('runClientSmokeWithoutModMenu', ClientProductionRunTask) {
+    group = 'verification'
+    description = 'Starts the production client test with Fabric API and without Mod Menu.'
+    mods.from(gametestJar)
+    jvmArgs.addAll(
+        '-Dfabric.client.gametest',
+        '-Dfabric.client.gametest.disableNetworkSynchronizer=true',
+        '-Dlocatorhud.expectModMenu=false'
+    )
+    runDir = layout.buildDirectory.dir('run/clientSmokeWithoutModMenu')
+    useXVFB = xvfbInCi
+}
+
+tasks.register('runClientSmokeWithModMenu', ClientProductionRunTask) {
+    group = 'verification'
+    description = 'Starts the production client test with the optional Mod Menu integration present.'
+    mods.from(gametestJar)
+    mods.from(configurations.named('modMenuProductionRuntime'))
+    jvmArgs.addAll(
+        '-Dfabric.client.gametest',
+        '-Dfabric.client.gametest.disableNetworkSynchronizer=true',
+        '-Dlocatorhud.expectModMenu=true'
+    )
+    runDir = layout.buildDirectory.dir('run/clientSmokeWithModMenu')
+    useXVFB = xvfbInCi
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('generateReleaseChecksum')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyReleaseJar')
+    dependsOn tasks.named('verifyClientOnlyPolicy')
 }

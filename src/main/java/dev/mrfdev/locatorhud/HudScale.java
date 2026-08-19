@@ -30,25 +30,7 @@ public enum HudScale {
         return this.percentage / 100.0F;
     }
 
-    public int scaleDimension(int unscaledDimension) {
-        return (unscaledDimension * this.percentage + 99) / 100;
-    }
-
     public double sliderPosition() {
         return (this.percentage - MINIMUM_PERCENTAGE) / (double) PERCENTAGE_RANGE;
-    }
-
-    public static HudScale nearestSliderPosition(double position) {
-        double clampedPosition = Math.max(0.0, Math.min(1.0, position));
-        HudScale nearest = EXTRA_SMALL;
-        double nearestDistance = Double.POSITIVE_INFINITY;
-        for (HudScale candidate : values()) {
-            double distance = Math.abs(candidate.sliderPosition() - clampedPosition);
-            if (distance < nearestDistance) {
-                nearest = candidate;
-                nearestDistance = distance;
-            }
-        }
-        return nearest;
     }
 }

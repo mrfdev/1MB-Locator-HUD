@@ -42,10 +42,6 @@ public enum CoordinateDisplayMode {
         return this.showsBlock;
     }
 
-    public int coordinateRows() {
-        return (this.showsDecimal ? 1 : 0) + (this.showsBlock ? 1 : 0);
-    }
-
     public boolean worldSharesDecimalRow(WorldNameDisplay worldDisplay) {
         return worldDisplay.showsWorld() && this.showsDecimal;
     }
@@ -68,12 +64,6 @@ public enum CoordinateDisplayMode {
         return this.showsBlock
             ? coordinateRowSegments(worldDisplay, worldSharesBlockRow(worldDisplay))
             : NO_SEGMENTS;
-    }
-
-    public int coreRows(WorldNameDisplay worldDisplay, boolean viewRowVisible) {
-        return coordinateRows()
-            + (worldUsesOwnRow(worldDisplay) ? 1 : 0)
-            + (viewRowVisible ? 1 : 0);
     }
 
     private static List<CoordinateRowSegment> coordinateRowSegments(

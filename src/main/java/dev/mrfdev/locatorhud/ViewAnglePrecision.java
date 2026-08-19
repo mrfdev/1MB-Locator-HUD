@@ -4,8 +4,8 @@ import java.util.Locale;
 
 public enum ViewAnglePrecision {
     WHOLE("OFF", 0),
-    ONE_DECIMAL("One decimal", 1),
-    TWO_DECIMALS("Two decimals", 2);
+    ONE_DECIMAL("1 decimal", 1),
+    TWO_DECIMALS("2 decimals", 2);
 
     private final String displayName;
     private final int decimalPlaces;

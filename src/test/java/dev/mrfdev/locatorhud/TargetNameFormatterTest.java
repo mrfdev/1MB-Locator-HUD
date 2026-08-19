@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Test;
 
 final class TargetNameFormatterTest {
     @Test
-    void shortensVanillaNamesToMatchCompactF3Style() {
-        assertEquals("sand", TargetNameFormatter.fromRegisteredName("minecraft:sand"));
-        assertEquals("water", TargetNameFormatter.fromRegisteredName("minecraft:water"));
-        assertEquals("oak_boat", TargetNameFormatter.fromRegisteredName("minecraft:oak_boat"));
+    void preservesFullVanillaIdentifiersForApiAccurateDisplay() {
+        assertEquals("minecraft:sand", TargetNameFormatter.fromRegisteredName("minecraft:sand"));
+        assertEquals("minecraft:water", TargetNameFormatter.fromRegisteredName("minecraft:water"));
+        assertEquals("minecraft:oak_boat", TargetNameFormatter.fromRegisteredName("minecraft:oak_boat"));
     }
 
     @Test

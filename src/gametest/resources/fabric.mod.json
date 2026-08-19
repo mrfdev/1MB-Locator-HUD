@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "locatorhud-gametest",
+  "version": "1.0.0",
+  "name": "1MB Locator HUD Client Smoke Tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "dev.mrfdev.locatorhud.LocatorHudClientSmokeTest"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25",
+    "fabric-api": ">=0.154.2+26.2",
+    "locatorhud": "*"
+  }
+}

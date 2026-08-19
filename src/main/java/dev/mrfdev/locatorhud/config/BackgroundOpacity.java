@@ -40,18 +40,4 @@ public enum BackgroundOpacity {
     public double sliderPosition() {
         return this.percentage / 100.0;
     }
-
-    public static BackgroundOpacity nearestSliderPosition(double position) {
-        double targetPercentage = Math.max(0.0, Math.min(1.0, position)) * 100.0;
-        BackgroundOpacity nearest = OFF;
-        double nearestDistance = Double.POSITIVE_INFINITY;
-        for (BackgroundOpacity candidate : values()) {
-            double distance = Math.abs(candidate.percentage - targetPercentage);
-            if (distance < nearestDistance) {
-                nearest = candidate;
-                nearestDistance = distance;
-            }
-        }
-        return nearest;
-    }
 }

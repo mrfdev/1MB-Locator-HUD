@@ -34,16 +34,6 @@ final class BackgroundOpacityTest {
     }
 
     @Test
-    void snapsSliderPositionsToTheNearestStop() {
-        for (BackgroundOpacity opacity : BackgroundOpacity.values()) {
-            assertSame(opacity, BackgroundOpacity.nearestSliderPosition(opacity.sliderPosition()));
-        }
-        assertSame(BackgroundOpacity.OFF, BackgroundOpacity.nearestSliderPosition(-1.0));
-        assertSame(BackgroundOpacity.SOLID, BackgroundOpacity.nearestSliderPosition(2.0));
-        assertSame(BackgroundOpacity.LIGHT, BackgroundOpacity.nearestSliderPosition(0.20));
-    }
-
-    @Test
     void onlyOffUsesTheMinimalPanelLayout() {
         assertFalse(BackgroundOpacity.OFF.drawsPanel());
         for (BackgroundOpacity opacity : BackgroundOpacity.values()) {

@@ -1,41 +1,65 @@
 package dev.mrfdev.locatorhud.config;
 
+import dev.mrfdev.locatorhud.ConfigScreenLayout;
+import dev.mrfdev.locatorhud.CoordinateCopyFormat;
 import dev.mrfdev.locatorhud.CoordinateDisplayMode;
 import dev.mrfdev.locatorhud.CoordinatePrecision;
+import dev.mrfdev.locatorhud.DiscreteSliderOptions;
 import dev.mrfdev.locatorhud.HudScale;
 import dev.mrfdev.locatorhud.LocatorHudClient;
+import dev.mrfdev.locatorhud.TargetNameMode;
 import dev.mrfdev.locatorhud.ViewAnglePrecision;
+import dev.mrfdev.locatorhud.ViewDirectionDisplay;
 import dev.mrfdev.locatorhud.WorldNameDisplay;
 import java.time.Duration;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.ScrollableLayout;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.layouts.GridLayout;
+import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
+import net.minecraft.client.gui.layouts.LinearLayout;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 
 public final class LocatorHudConfigScreen extends Screen {
-    private static final int MAX_BUTTON_WIDTH = 240;
-    private static final int NORMAL_BUTTON_HEIGHT = 16;
-    private static final int COMPACT_BUTTON_HEIGHT = 15;
-    private static final int COMPACT_LAYOUT_THRESHOLD = 248;
-    private static final int COLUMN_GAP = 4;
-    private static final int FOOTER_ROW = 13;
+    private static final int BUTTON_HEIGHT = 20;
+    private static final int HEADING_HEIGHT = 16;
+    private static final int CONTROL_SPACING = 4;
+    private static final int SECTION_SPACING = 8;
+    private static final int FOOTER_BUTTON_WIDTH = 150;
+    private static final int FOOTER_GAP = 4;
     private static final int KEY_COLOR = 0xD8D8D8;
     private static final int VALUE_COLOR = 0xFFFFFF;
     private static final int ENABLED_COLOR = 0x55FF55;
     private static final int DISABLED_COLOR = 0xFF7777;
     private static final int SECTION_COLOR = 0xFFD166;
     private static final Duration TOOLTIP_DELAY = Duration.ofSeconds(1);
+    private static final DiscreteSliderOptions<HudScale> HUD_SCALE_OPTIONS =
+        new DiscreteSliderOptions<>(List.of(HudScale.values()), HudScale::sliderPosition);
+    private static final DiscreteSliderOptions<BackgroundOpacity> BACKGROUND_OPTIONS =
+        new DiscreteSliderOptions<>(
+            List.of(BackgroundOpacity.values()),
+            BackgroundOpacity::sliderPosition
+        );
 
     private final Screen parent;
-    private int buttonHeight = NORMAL_BUTTON_HEIGHT;
-    private int rowSpacing = NORMAL_BUTTON_HEIGHT;
+    private LocatorHudPreset selectedPreset = LocatorHudPreset.MINIMAL;
+    private LocatorHudConfig config;
+    private CycleButton<CoordinatePrecision> precisionButton;
+    private CycleButton<ViewAnglePrecision> anglePrecisionButton;
+    private CycleButton<Boolean> panelShadowButton;
 
     public LocatorHudConfigScreen(Screen parent) {
         super(Component.translatable("screen.locatorhud.title"));
@@ -44,336 +68,24 @@ public final class LocatorHudConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        LocatorHudConfig config = LocatorHudClient.instance().config();
-        boolean compactLayout = this.height < COMPACT_LAYOUT_THRESHOLD;
-        this.buttonHeight = compactLayout ? COMPACT_BUTTON_HEIGHT : NORMAL_BUTTON_HEIGHT;
-        this.rowSpacing = this.buttonHeight;
-        int buttonWidth = Math.min(MAX_BUTTON_WIDTH, (this.width - 12) / 2);
-        int left = this.width / 2 - buttonWidth - COLUMN_GAP / 2;
-        int right = this.width / 2 + COLUMN_GAP / 2;
-        int contentHeight = this.rowSpacing * FOOTER_ROW + 4 + this.buttonHeight;
-        int top = Math.max(compactLayout ? 18 : 20, (this.height - contentHeight) / 2);
+        this.config = LocatorHudClient.instance().config();
+        ConfigScreenLayout.Plan plan = ConfigScreenLayout.forScreenWidth(this.width);
+        HeaderAndFooterLayout screenLayout = new HeaderAndFooterLayout(this);
+        screenLayout.addTitleHeader(this.title, this.font);
 
-        CycleButton<CoordinatePrecision> precisionButton = tooltipBuilder(
-            CycleButton.builder(
-                value -> settingValue(value.displayName()),
-                config.precision()
-            ),
-            "tooltip.locatorhud.decimal_precision"
-        ).withValues(
-            CoordinatePrecision.NONE,
-            CoordinatePrecision.ONE_DECIMAL,
-            CoordinatePrecision.TWO_DECIMALS
-        ).create(
-            left,
-            row(top, 6),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.decimal_precision"),
-            (button, value) -> config.setPrecision(value)
+        LinearLayout content = buildContent(this.config, plan);
+        ScrollableLayout scrolling = new ScrollableLayout(
+            this.minecraft,
+            content,
+            Math.max(1, screenLayout.getContentHeight()),
+            ScrollableLayout.ReserveStrategy.BOTH
         );
-        precisionButton.active = config.coordinateDisplay().showsDecimal();
-
-        CycleButton<ViewAnglePrecision> anglePrecisionButton = tooltipBuilder(
-            CycleButton.builder(
-                LocatorHudConfigScreen::viewAnglePrecisionValue,
-                config.viewAnglePrecision()
-            ),
-            "tooltip.locatorhud.angle_decimals"
-        ).withValues(ViewAnglePrecision.values()).create(
-            left,
-            row(top, 10),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.angle_decimals"),
-            (button, value) -> config.setViewAnglePrecision(value)
-        );
-        anglePrecisionButton.active = config.viewAnglesEnabled();
-
-        CycleButton<Boolean> panelShadowButton = tooltipBuilder(
-            onOffBuilder(config.panelShadow()),
-            "tooltip.locatorhud.panel_shadow"
-        ).create(
-            right,
-            row(top, 1),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.panel_shadow"),
-            (button, enabled) -> config.setPanelShadow(enabled)
-        );
-        panelShadowButton.active = hasVisibleBackground(config);
-
-        addRenderableWidget(new StringWidget(
-            left,
-            top - 18,
-            buttonWidth * 2 + COLUMN_GAP,
-            16,
-            this.title,
-            this.font
-        ));
-
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.enabled()),
-            "tooltip.locatorhud.enabled"
-        ).create(
-            left,
-            row(top, 0),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.enabled"),
-            (button, enabled) -> config.setEnabled(enabled)
-        ));
-        addCycleButton(tooltipBuilder(
-            CycleButton.builder(
-                value -> settingValue(value.displayName()),
-                config.palette()
-            ),
-            "tooltip.locatorhud.palette"
-        ).withValues(ColorPalette.values()).create(
-            right,
-            row(top, 0),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.palette"),
-            (button, value) -> config.setPalette(value)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.textShadow()),
-            "tooltip.locatorhud.text_shadow"
-        ).create(
-            left,
-            row(top, 1),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.text_shadow"),
-            (button, enabled) -> config.setTextShadow(enabled)
-        ));
-        addCycleButton(panelShadowButton);
-
-        addSectionHeading(left, row(top, 2), buttonWidth, "section.locatorhud.main_panel");
-        addSectionHeading(right, row(top, 2), buttonWidth, "section.locatorhud.details_panel");
-
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.mainPanelEnabled()),
-            "tooltip.locatorhud.main_panel_enabled"
-        ).create(
-            left,
-            row(top, 3),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.main_panel_enabled"),
-            (button, enabled) -> {
-                config.setMainPanelEnabled(enabled);
-                panelShadowButton.active = hasVisibleBackground(config);
-            }
-        ));
-        addCycleButton(tooltipBuilder(
-            CycleButton.builder(
-                value -> settingValue(value.displayName()),
-                config.corner()
-            ),
-            "tooltip.locatorhud.position"
-        ).withValues(HudCorner.values()).create(
-            left,
-            row(top, 4),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.position"),
-            (button, value) -> config.setCorner(value)
-        ));
-        addCycleButton(tooltipBuilder(
-            CycleButton.builder(
-                value -> settingValue(value.displayName()),
-                config.coordinateDisplay()
-            ),
-            "tooltip.locatorhud.coordinate_display"
-        ).withValues(CoordinateDisplayMode.values()).create(
-            left,
-            row(top, 5),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.coordinate_display"),
-            (button, value) -> {
-                config.setCoordinateDisplay(value);
-                precisionButton.active = value.showsDecimal();
-            }
-        ));
-        addCycleButton(precisionButton);
-        addCycleButton(tooltipBuilder(
-            CycleButton.builder(
-                LocatorHudConfigScreen::worldNameDisplayValue,
-                config.worldNameDisplay()
-            ),
-            "tooltip.locatorhud.world_name"
-        ).withValues(WorldNameDisplay.values()).create(
-            left,
-            row(top, 7),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.world_name"),
-            (button, value) -> config.setWorldNameDisplay(value)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.viewDirectionEnabled()),
-            "tooltip.locatorhud.view_direction"
-        ).create(
-            left,
-            row(top, 8),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.view_direction"),
-            (button, enabled) -> config.setViewDirectionEnabled(enabled)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.viewAnglesEnabled()),
-            "tooltip.locatorhud.view_angles"
-        ).create(
-            left,
-            row(top, 9),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.view_angles"),
-            (button, enabled) -> {
-                config.setViewAnglesEnabled(enabled);
-                anglePrecisionButton.active = enabled;
-            }
-        ));
-        addCycleButton(anglePrecisionButton);
-        addTooltipWidget(new HudScaleSlider(
-            left,
-            row(top, 11),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.hud_size"),
-            config.hudScale(),
-            config::setHudScale
-        ), "tooltip.locatorhud.hud_size");
-        addTooltipWidget(new BackgroundOpacitySlider(
-            left,
-            row(top, 12),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.background"),
-            config.backgroundOpacity(),
-            value -> {
-                config.setBackgroundOpacity(value);
-                panelShadowButton.active = hasVisibleBackground(config);
-            }
-        ), "tooltip.locatorhud.background");
-
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.detailsPanelEnabled()),
-            "tooltip.locatorhud.details_panel_enabled"
-        ).create(
-            right,
-            row(top, 3),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.details_panel_enabled"),
-            (button, enabled) -> {
-                config.setDetailsPanelEnabled(enabled);
-                panelShadowButton.active = hasVisibleBackground(config);
-            }
-        ));
-        addCycleButton(tooltipBuilder(
-            CycleButton.builder(
-                value -> settingValue(value.displayName()),
-                config.detailsCorner()
-            ),
-            "tooltip.locatorhud.details_position"
-        ).withValues(HudCorner.values()).create(
-            right,
-            row(top, 4),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.details_position"),
-            (button, value) -> config.setDetailsCorner(value)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.biomeEnabled()),
-            "tooltip.locatorhud.biome"
-        ).create(
-            right,
-            row(top, 5),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.biome"),
-            (button, enabled) -> config.setBiomeEnabled(enabled)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.targetBlockEnabled()),
-            "tooltip.locatorhud.target_block"
-        ).create(
-            right,
-            row(top, 6),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.target_block"),
-            (button, enabled) -> config.setTargetBlockEnabled(enabled)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.targetFluidEnabled()),
-            "tooltip.locatorhud.target_fluid"
-        ).create(
-            right,
-            row(top, 7),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.target_fluid"),
-            (button, enabled) -> config.setTargetFluidEnabled(enabled)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.targetEntityEnabled()),
-            "tooltip.locatorhud.target_entity"
-        ).create(
-            right,
-            row(top, 8),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.target_entity"),
-            (button, enabled) -> config.setTargetEntityEnabled(enabled)
-        ));
-        addCycleButton(tooltipBuilder(
-            onOffBuilder(config.autoHideEmptyTargetValues()),
-            "tooltip.locatorhud.auto_hide_empty_values"
-        ).create(
-            right,
-            row(top, 9),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.auto_hide_empty_values"),
-            (button, enabled) -> config.setAutoHideEmptyTargetValues(enabled)
-        ));
-        addTooltipWidget(new HudScaleSlider(
-            right,
-            row(top, 11),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.details_size"),
-            config.detailsHudScale(),
-            config::setDetailsHudScale
-        ), "tooltip.locatorhud.details_size");
-        addTooltipWidget(new BackgroundOpacitySlider(
-            right,
-            row(top, 12),
-            buttonWidth,
-            this.buttonHeight,
-            optionName("option.locatorhud.details_background"),
-            config.detailsBackgroundOpacity(),
-            value -> {
-                config.setDetailsBackgroundOpacity(value);
-                panelShadowButton.active = hasVisibleBackground(config);
-            }
-        ), "tooltip.locatorhud.details_background");
-
-        addTooltipWidget(Button.builder(Component.translatable("controls.reset"), button -> {
-            config.reset();
-            rebuildWidgets();
-        }).bounds(left, row(top, FOOTER_ROW) + 4, buttonWidth, this.buttonHeight).build(),
-            "tooltip.locatorhud.reset");
-        addTooltipWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
-            .bounds(right, row(top, FOOTER_ROW) + 4, buttonWidth, this.buttonHeight)
-            .build(), "tooltip.locatorhud.done");
+        scrolling.setMinWidth(plan.contentWidth());
+        screenLayout.addToContents(scrolling);
+        screenLayout.addToFooter(buildFooter(this.config));
+        screenLayout.arrangeElements();
+        screenLayout.visitWidgets(this::addRenderableWidget);
+        refreshControlStates();
     }
 
     @Override
@@ -381,26 +93,644 @@ public final class LocatorHudConfigScreen extends Screen {
         this.minecraft.gui.setScreen(this.parent);
     }
 
-    private void addSectionHeading(int x, int y, int width, String translationKey) {
-        addRenderableWidget(new StringWidget(
-            x,
-            y,
+    private LinearLayout buildContent(LocatorHudConfig config, ConfigScreenLayout.Plan plan) {
+        LinearLayout content = LinearLayout.vertical().spacing(SECTION_SPACING);
+        content.defaultCellSetting().alignHorizontallyCenter();
+        content.addChild(buildGlobalSection(config, plan));
+        content.addChild(buildSetupSection(config, plan));
+
+        if (plan.twoColumns()) {
+            LinearLayout panelColumns = LinearLayout.horizontal().spacing(ConfigScreenLayout.COLUMN_GAP);
+            panelColumns.defaultCellSetting().alignVerticallyTop();
+            panelColumns.addChild(buildMainSection(config, plan.buttonWidth()));
+            panelColumns.addChild(buildDetailsSection(config, plan.buttonWidth()));
+            content.addChild(panelColumns);
+        } else {
+            content.addChild(buildMainSection(config, plan.buttonWidth()));
+            content.addChild(buildDetailsSection(config, plan.buttonWidth()));
+        }
+        return content;
+    }
+
+    private LinearLayout buildGlobalSection(LocatorHudConfig config, ConfigScreenLayout.Plan plan) {
+        int buttonWidth = plan.buttonWidth();
+        List<Integer> shadowWidths = ConfigScreenLayout.equalColumnWidths(
+            buttonWidth,
+            2,
+            CONTROL_SPACING
+        );
+        CycleButton<Boolean> enabledButton = cycleButton(
+            tooltipBuilder(onOffBuilder(config.enabled()), "tooltip.locatorhud.enabled"),
+            buttonWidth,
+            "option.locatorhud.enabled",
+            (button, enabled) -> config.setEnabled(enabled)
+        );
+        CycleButton<ColorPalette> paletteButton = cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(value -> settingValue(value.displayName()), config.palette()),
+                "tooltip.locatorhud.palette"
+            ).withValues(ColorPalette.values()),
+            buttonWidth - Checkbox.getBoxSize(this.font) - CONTROL_SPACING,
+            "option.locatorhud.palette",
+            (button, value) -> config.setPalette(value)
+        );
+        Checkbox biomeThemeOverrideCheckbox = Checkbox.builder(Component.empty(), this.font)
+            .maxWidth(Checkbox.getBoxSize(this.font))
+            .selected(config.biomeThemeOverrideEnabled())
+            .onValueChange((checkbox, enabled) -> config.setBiomeThemeOverrideEnabled(enabled))
+            .build();
+        biomeThemeOverrideCheckbox.setTooltip(Tooltip.create(
+            Component.translatable("tooltip.locatorhud.biome_theme_override"),
+            Component.translatable("narration.locatorhud.biome_theme_override")
+        ));
+        biomeThemeOverrideCheckbox.setTooltipDelay(TOOLTIP_DELAY);
+        LinearLayout paletteRow = controlRow(paletteButton, biomeThemeOverrideCheckbox);
+        CycleButton<Boolean> textShadowButton = cycleButton(
+            tooltipBuilder(onOffBuilder(config.textShadow()), "tooltip.locatorhud.text_shadow"),
+            shadowWidths.get(0),
+            "option.locatorhud.text_shadow",
+            (button, enabled) -> config.setTextShadow(enabled)
+        );
+        this.panelShadowButton = cycleButton(
+            tooltipBuilder(onOffBuilder(config.panelShadow()), "tooltip.locatorhud.panel_shadow"),
+            shadowWidths.get(1),
+            "option.locatorhud.panel_shadow",
+            (button, enabled) -> config.setPanelShadow(enabled)
+        );
+        LinearLayout shadowRow = controlRow(textShadowButton, this.panelShadowButton);
+        CycleButton<CoordinateCopyFormat> coordinateCopyButton = cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(
+                    LocatorHudConfigScreen::coordinateCopyFormatValue,
+                    config.coordinateCopyFormat()
+                ),
+                "tooltip.locatorhud.coordinate_copy_format"
+            ).withValues(CoordinateCopyFormat.values()),
+            buttonWidth,
+            "option.locatorhud.coordinate_copy_format",
+            (button, value) -> config.setCoordinateCopyFormat(value)
+        );
+
+        LinearLayout section = section("section.locatorhud.general", plan.contentWidth());
+        if (plan.twoColumns()) {
+            GridLayout controls = new GridLayout().columnSpacing(ConfigScreenLayout.COLUMN_GAP)
+                .rowSpacing(CONTROL_SPACING);
+            GridLayout.RowHelper rows = controls.createRowHelper(2);
+            rows.addChild(enabledButton);
+            rows.addChild(paletteRow);
+            rows.addChild(shadowRow);
+            rows.addChild(coordinateCopyButton);
+            section.addChild(controls);
+        } else {
+            section.addChild(enabledButton);
+            section.addChild(paletteRow);
+            section.addChild(shadowRow);
+            section.addChild(coordinateCopyButton);
+        }
+        return section;
+    }
+
+    private LinearLayout buildSetupSection(LocatorHudConfig config, ConfigScreenLayout.Plan plan) {
+        int buttonWidth = plan.buttonWidth();
+        List<Integer> controlWidths = ConfigScreenLayout.equalColumnWidths(
+            buttonWidth,
+            2,
+            CONTROL_SPACING
+        );
+        CycleButton<LocatorHudPreset> presetButton = cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(
+                    value -> Component.translatable(value.translationKey()).withColor(VALUE_COLOR),
+                    this.selectedPreset
+                ).withValues(LocatorHudPreset.values()),
+                "tooltip.locatorhud.preset"
+            ),
+            controlWidths.get(0),
+            "option.locatorhud.preset",
+            (button, value) -> this.selectedPreset = value
+        );
+        Button applyPresetButton = withTooltip(
+            Button.builder(Component.translatable("button.locatorhud.apply_preset"), button -> {
+                config.applyPreset(this.selectedPreset);
+                rebuildWidgets();
+            }).size(controlWidths.get(1), BUTTON_HEIGHT).build(),
+            "tooltip.locatorhud.apply_preset"
+        );
+        LinearLayout presetRow = controlRow(presetButton, applyPresetButton);
+
+        Button saveSetupButton = withTooltip(
+            Button.builder(Component.translatable("button.locatorhud.save_setup"), button -> {
+                if (config.hasSavedSetup()) {
+                    showConfirmation(
+                        "confirm.locatorhud.overwrite_setup.title",
+                        "confirm.locatorhud.overwrite_setup.message",
+                        "button.locatorhud.overwrite",
+                        () -> config.saveCurrentSetup()
+                    );
+                } else {
+                    config.saveCurrentSetup();
+                    rebuildWidgets();
+                }
+            }).size(controlWidths.get(0), BUTTON_HEIGHT).build(),
+            "tooltip.locatorhud.save_setup"
+        );
+        Button restoreSetupButton = withTooltip(
+            Button.builder(Component.translatable("button.locatorhud.restore_setup"), button ->
+                showConfirmation(
+                    "confirm.locatorhud.restore_setup.title",
+                    "confirm.locatorhud.restore_setup.message",
+                    "button.locatorhud.restore",
+                    config::restoreSavedSetup
+                )
+            ).size(controlWidths.get(1), BUTTON_HEIGHT).build(),
+            "tooltip.locatorhud.restore_setup"
+        );
+        restoreSetupButton.active = config.hasSavedSetup();
+        LinearLayout savedSetupRow = controlRow(saveSetupButton, restoreSetupButton);
+
+        LinearLayout section = section("section.locatorhud.setup", plan.contentWidth());
+        if (plan.twoColumns()) {
+            GridLayout controls = new GridLayout().columnSpacing(ConfigScreenLayout.COLUMN_GAP);
+            GridLayout.RowHelper rows = controls.createRowHelper(2);
+            rows.addChild(presetRow);
+            rows.addChild(savedSetupRow);
+            section.addChild(controls);
+        } else {
+            section.addChild(presetRow);
+            section.addChild(savedSetupRow);
+        }
+        return section;
+    }
+
+    private LinearLayout buildMainSection(LocatorHudConfig config, int width) {
+        LinearLayout section = section("section.locatorhud.main_panel", width);
+        List<Integer> panelWidths = ConfigScreenLayout.equalColumnWidths(width, 2, CONTROL_SPACING);
+        section.addChild(controlRow(
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.mainPanelEnabled()),
+                    "tooltip.locatorhud.main_panel_enabled"
+                ),
+                panelWidths.get(0),
+                "option.locatorhud.main_panel_enabled_short",
+                (button, enabled) -> {
+                    config.setMainPanelEnabled(enabled);
+                    refreshControlStates();
+                }
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    CycleButton.builder(LocatorHudConfigScreen::cornerValue, config.corner()),
+                    "tooltip.locatorhud.position"
+                ).withValues(HudCorner.values()),
+                panelWidths.get(1),
+                "option.locatorhud.position_short",
+                (button, value) -> config.setCorner(value)
+            )
+        ));
+        section.addChild(cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(
+                    value -> settingValue(value.displayName()),
+                    config.coordinateDisplay()
+                ),
+                "tooltip.locatorhud.coordinate_display"
+            ).withValues(CoordinateDisplayMode.values()),
             width,
-            this.buttonHeight,
-            Component.translatable(translationKey).withColor(SECTION_COLOR),
-            this.font
+            "option.locatorhud.coordinate_display",
+            (button, value) -> {
+                config.setCoordinateDisplay(value);
+                refreshControlStates();
+            }
+        ));
+
+        this.precisionButton = cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(value -> settingValue(value.displayName()), config.precision()),
+                "tooltip.locatorhud.decimal_precision"
+            ).withValues(
+                CoordinatePrecision.NONE,
+                CoordinatePrecision.ONE_DECIMAL,
+                CoordinatePrecision.TWO_DECIMALS
+            ),
+            width,
+            "option.locatorhud.decimal_precision",
+            (button, value) -> config.setPrecision(value)
+        );
+        section.addChild(this.precisionButton);
+        section.addChild(cycleButton(
+            tooltipBuilder(
+                onOffBuilder(config.coordinateLensEnabled()),
+                "tooltip.locatorhud.coordinate_lens"
+            ),
+            width,
+            "option.locatorhud.coordinate_lens",
+            (button, enabled) -> {
+                config.setCoordinateLensEnabled(enabled);
+                refreshControlStates();
+            }
+        ));
+        section.addChild(cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(
+                    LocatorHudConfigScreen::worldNameDisplayValue,
+                    config.worldNameDisplay()
+                ),
+                "tooltip.locatorhud.world_name"
+            ).withValues(WorldNameDisplay.values()),
+            width,
+            "option.locatorhud.world_name",
+            (button, value) -> config.setWorldNameDisplay(value)
+        ));
+        List<Integer> viewWidths = ConfigScreenLayout.equalColumnWidths(width, 2, CONTROL_SPACING);
+        section.addChild(controlRow(
+            cycleButton(
+                tooltipBuilder(
+                    CycleButton.builder(
+                        LocatorHudConfigScreen::viewDirectionDisplayValue,
+                        config.viewDirectionDisplay()
+                    ).withValues(ViewDirectionDisplay.values()),
+                    "tooltip.locatorhud.view_direction"
+                ),
+                viewWidths.get(0),
+                "option.locatorhud.view_direction_short",
+                (button, value) -> config.setViewDirectionDisplay(value)
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.viewAnglesEnabled()),
+                    "tooltip.locatorhud.view_angles"
+                ),
+                viewWidths.get(1),
+                "option.locatorhud.view_angles_short",
+                (button, enabled) -> {
+                    config.setViewAnglesEnabled(enabled);
+                    refreshControlStates();
+                }
+            )
+        ));
+
+        this.anglePrecisionButton = cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(
+                    LocatorHudConfigScreen::viewAnglePrecisionValue,
+                    config.viewAnglePrecision()
+                ),
+                "tooltip.locatorhud.angle_decimals"
+            ).withValues(ViewAnglePrecision.values()),
+            width,
+            "option.locatorhud.angle_decimals",
+            (button, value) -> config.setViewAnglePrecision(value)
+        );
+        section.addChild(this.anglePrecisionButton);
+        addSizeAndBackgroundControls(
+            section,
+            width,
+            "option.locatorhud.hud_size",
+            "tooltip.locatorhud.hud_size",
+            config.hudScale(),
+            config::setHudScale,
+            "option.locatorhud.background",
+            "tooltip.locatorhud.background",
+            config.backgroundOpacity(),
+            value -> {
+                config.setBackgroundOpacity(value);
+                refreshControlStates();
+            }
+        );
+        return section;
+    }
+
+    private LinearLayout buildDetailsSection(LocatorHudConfig config, int width) {
+        LinearLayout section = section("section.locatorhud.details_panel", width);
+        List<Integer> panelWidths = ConfigScreenLayout.equalColumnWidths(width, 2, CONTROL_SPACING);
+        section.addChild(controlRow(
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.detailsPanelEnabled()),
+                    "tooltip.locatorhud.details_panel_enabled"
+                ),
+                panelWidths.get(0),
+                "option.locatorhud.details_panel_enabled_short",
+                (button, enabled) -> {
+                    config.setDetailsPanelEnabled(enabled);
+                    refreshControlStates();
+                }
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    CycleButton.builder(
+                        LocatorHudConfigScreen::cornerValue,
+                        config.detailsCorner()
+                    ),
+                    "tooltip.locatorhud.details_position"
+                ).withValues(HudCorner.values()),
+                panelWidths.get(1),
+                "option.locatorhud.position_short",
+                (button, value) -> config.setDetailsCorner(value)
+            )
+        ));
+        List<Integer> detailValueWidths = ConfigScreenLayout.equalColumnWidths(
+            width,
+            3,
+            CONTROL_SPACING
+        );
+        section.addChild(controlRow(
+            cycleButton(
+                tooltipBuilder(onOffBuilder(config.biomeEnabled()), "tooltip.locatorhud.biome"),
+                detailValueWidths.get(0),
+                "option.locatorhud.biome",
+                (button, enabled) -> config.setBiomeEnabled(enabled)
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.biomeTransitionEnabled()),
+                    "tooltip.locatorhud.biome_transition"
+                ),
+                detailValueWidths.get(1),
+                "option.locatorhud.biome_transition_short",
+                (button, enabled) -> config.setBiomeTransitionEnabled(enabled)
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.movementSpeedEnabled()),
+                    "tooltip.locatorhud.movement_speed"
+                ),
+                detailValueWidths.get(2),
+                "option.locatorhud.movement_speed_short",
+                (button, enabled) -> config.setMovementSpeedEnabled(enabled)
+            )
+        ));
+        List<Integer> targetWidths = ConfigScreenLayout.equalColumnWidths(width, 3, CONTROL_SPACING);
+        section.addChild(controlRow(
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.targetBlockEnabled()),
+                    "tooltip.locatorhud.target_block"
+                ),
+                targetWidths.get(0),
+                "option.locatorhud.target_block_short",
+                (button, enabled) -> config.setTargetBlockEnabled(enabled)
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.targetFluidEnabled()),
+                    "tooltip.locatorhud.target_fluid"
+                ),
+                targetWidths.get(1),
+                "option.locatorhud.target_fluid_short",
+                (button, enabled) -> config.setTargetFluidEnabled(enabled)
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.targetEntityEnabled()),
+                    "tooltip.locatorhud.target_entity"
+                ),
+                targetWidths.get(2),
+                "option.locatorhud.target_entity_short",
+                (button, enabled) -> config.setTargetEntityEnabled(enabled)
+            )
+        ));
+        section.addChild(cycleButton(
+            tooltipBuilder(
+                CycleButton.builder(
+                    LocatorHudConfigScreen::targetNameModeValue,
+                    config.targetNameMode()
+                ),
+                "tooltip.locatorhud.target_name_mode"
+            ).withValues(TargetNameMode.FRIENDLY, TargetNameMode.API_ACCURATE),
+            width,
+            "option.locatorhud.target_name_mode",
+            (button, value) -> config.setTargetNameMode(value)
+        ));
+        List<Integer> targetBehaviorWidths = ConfigScreenLayout.equalColumnWidths(
+            width,
+            2,
+            CONTROL_SPACING
+        );
+        section.addChild(controlRow(
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.autoHideEmptyTargetValues()),
+                    "tooltip.locatorhud.auto_hide_empty_values"
+                ),
+                targetBehaviorWidths.get(0),
+                "option.locatorhud.auto_hide_empty_values_short",
+                (button, enabled) -> config.setAutoHideEmptyTargetValues(enabled)
+            ),
+            cycleButton(
+                tooltipBuilder(
+                    onOffBuilder(config.targetLingerEnabled()),
+                    "tooltip.locatorhud.target_linger"
+                ),
+                targetBehaviorWidths.get(1),
+                "option.locatorhud.target_linger_short",
+                (button, enabled) -> config.setTargetLingerEnabled(enabled)
+            )
+        ));
+        addSizeAndBackgroundControls(
+            section,
+            width,
+            "option.locatorhud.details_size",
+            "tooltip.locatorhud.details_size",
+            config.detailsHudScale(),
+            config::setDetailsHudScale,
+            "option.locatorhud.details_background",
+            "tooltip.locatorhud.details_background",
+            config.detailsBackgroundOpacity(),
+            value -> {
+                config.setDetailsBackgroundOpacity(value);
+                refreshControlStates();
+            }
+        );
+        return section;
+    }
+
+    private void addSizeAndBackgroundControls(
+        LinearLayout section,
+        int width,
+        String sizeOptionKey,
+        String sizeTooltipKey,
+        HudScale scale,
+        Consumer<HudScale> onScaleChanged,
+        String backgroundOptionKey,
+        String backgroundTooltipKey,
+        BackgroundOpacity background,
+        Consumer<BackgroundOpacity> onBackgroundChanged
+    ) {
+        if (ConfigScreenLayout.pairsPanelSliders(width)) {
+            List<Integer> sliderWidths = ConfigScreenLayout.equalColumnWidths(
+                width,
+                2,
+                CONTROL_SPACING
+            );
+            section.addChild(controlRow(
+                discreteSlider(
+                    sliderWidths.get(0),
+                    "option.locatorhud.size_short",
+                    sizeTooltipKey,
+                    HUD_SCALE_OPTIONS,
+                    scale,
+                    value -> settingValue(value.displayName()),
+                    onScaleChanged
+                ),
+                discreteSlider(
+                    sliderWidths.get(1),
+                    "option.locatorhud.background_short",
+                    backgroundTooltipKey,
+                    BACKGROUND_OPTIONS,
+                    background,
+                    LocatorHudConfigScreen::backgroundOpacityValue,
+                    onBackgroundChanged
+                )
+            ));
+            return;
+        }
+
+        section.addChild(discreteSlider(
+            width,
+            sizeOptionKey,
+            sizeTooltipKey,
+            HUD_SCALE_OPTIONS,
+            scale,
+            value -> settingValue(value.displayName()),
+            onScaleChanged
+        ));
+        section.addChild(discreteSlider(
+            width,
+            backgroundOptionKey,
+            backgroundTooltipKey,
+            BACKGROUND_OPTIONS,
+            background,
+            LocatorHudConfigScreen::backgroundOpacityValue,
+            onBackgroundChanged
         ));
     }
 
-    private <T> CycleButton<T> addCycleButton(CycleButton<T> button) {
-        button.setTooltipDelay(TOOLTIP_DELAY);
-        return addRenderableWidget(button);
+    private LinearLayout buildFooter(LocatorHudConfig config) {
+        int availableWidth = Math.max(2, this.width - ConfigScreenLayout.OUTER_MARGIN - FOOTER_GAP);
+        int buttonWidth = Math.max(1, Math.min(FOOTER_BUTTON_WIDTH, availableWidth / 2));
+        LinearLayout footer = LinearLayout.horizontal().spacing(FOOTER_GAP);
+        footer.addChild(withTooltip(
+            Button.builder(Component.translatable("controls.reset"), button -> showConfirmation(
+                "confirm.locatorhud.reset.title",
+                "confirm.locatorhud.reset.message",
+                "button.locatorhud.reset",
+                config::reset
+            )).size(buttonWidth, BUTTON_HEIGHT).build(),
+            "tooltip.locatorhud.reset"
+        ));
+        footer.addChild(withTooltip(
+            Button.builder(Component.translatable("gui.done"), button -> onClose())
+                .size(buttonWidth, BUTTON_HEIGHT)
+                .build(),
+            "tooltip.locatorhud.done"
+        ));
+        return footer;
     }
 
-    private <T extends AbstractWidget> T addTooltipWidget(T widget, String translationKey) {
+    private void showConfirmation(
+        String titleKey,
+        String messageKey,
+        String confirmButtonKey,
+        Runnable confirmedAction
+    ) {
+        this.minecraft.gui.setScreen(new ConfirmScreen(
+            confirmed -> {
+                if (confirmed) {
+                    confirmedAction.run();
+                }
+                this.minecraft.gui.setScreen(this);
+            },
+            Component.translatable(titleKey),
+            Component.translatable(messageKey),
+            Component.translatable(confirmButtonKey),
+            CommonComponents.GUI_CANCEL
+        ));
+    }
+
+    private LinearLayout section(String translationKey, int width) {
+        LinearLayout section = LinearLayout.vertical().spacing(CONTROL_SPACING);
+        section.defaultCellSetting().alignHorizontallyCenter();
+        section.addChild(new StringWidget(
+            0,
+            0,
+            width,
+            HEADING_HEIGHT,
+            Component.translatable(translationKey).withColor(SECTION_COLOR),
+            this.font
+        ));
+        return section;
+    }
+
+    private static LinearLayout controlRow(AbstractWidget... controls) {
+        LinearLayout row = LinearLayout.horizontal().spacing(CONTROL_SPACING);
+        for (AbstractWidget control : controls) {
+            row.addChild(control);
+        }
+        return row;
+    }
+
+    private <T> CycleButton<T> cycleButton(
+        CycleButton.Builder<T> builder,
+        int width,
+        String optionKey,
+        CycleButton.OnValueChange<T> onValueChange
+    ) {
+        CycleButton<T> button = builder.create(
+            0,
+            0,
+            width,
+            BUTTON_HEIGHT,
+            optionName(optionKey),
+            onValueChange
+        );
+        button.setTooltipDelay(TOOLTIP_DELAY);
+        return button;
+    }
+
+    private <T> DiscreteOptionSlider<T> discreteSlider(
+        int width,
+        String optionKey,
+        String tooltipKey,
+        DiscreteSliderOptions<T> options,
+        T initialValue,
+        Function<? super T, Component> valueFormatter,
+        Consumer<T> onValueChanged
+    ) {
+        return withTooltip(new DiscreteOptionSlider<>(
+            0,
+            0,
+            width,
+            BUTTON_HEIGHT,
+            optionName(optionKey),
+            options,
+            initialValue,
+            valueFormatter,
+            onValueChanged
+        ), tooltipKey);
+    }
+
+    private <T extends AbstractWidget> T withTooltip(T widget, String translationKey) {
         widget.setTooltip(tooltip(translationKey));
         widget.setTooltipDelay(TOOLTIP_DELAY);
-        return addRenderableWidget(widget);
+        return widget;
+    }
+
+    private void refreshControlStates() {
+        if (this.config == null) {
+            return;
+        }
+        if (this.precisionButton != null) {
+            this.precisionButton.active = this.config.coordinateDisplay().showsDecimal()
+                || this.config.coordinateLensEnabled();
+        }
+        if (this.anglePrecisionButton != null) {
+            this.anglePrecisionButton.active = this.config.viewAnglesEnabled();
+        }
+        if (this.panelShadowButton != null) {
+            this.panelShadowButton.active = hasVisibleBackground(this.config);
+        }
     }
 
     private static <T> CycleButton.Builder<T> tooltipBuilder(
@@ -429,10 +759,40 @@ public final class LocatorHudConfigScreen extends Screen {
         return Component.literal(value).withColor(VALUE_COLOR);
     }
 
+    private static Component cornerValue(HudCorner value) {
+        String translationKey = switch (value) {
+            case TOP_LEFT -> "value.locatorhud.corner.top_left";
+            case TOP_RIGHT -> "value.locatorhud.corner.top_right";
+            case BOTTOM_LEFT -> "value.locatorhud.corner.bottom_left";
+            case BOTTOM_RIGHT -> "value.locatorhud.corner.bottom_right";
+        };
+        return Component.translatable(translationKey).withColor(VALUE_COLOR);
+    }
+
+    private static Component targetNameModeValue(TargetNameMode value) {
+        return Component.translatable(value.translationKey()).withColor(VALUE_COLOR);
+    }
+
+    private static Component coordinateCopyFormatValue(CoordinateCopyFormat value) {
+        return Component.translatable(value.translationKey()).withColor(VALUE_COLOR);
+    }
+
     private static Component worldNameDisplayValue(WorldNameDisplay value) {
         return switch (value) {
             case IN_FRONT -> stateValue(true, " (in front)");
             case BEHIND -> stateValue(true, " (behind)");
+            case OFF -> stateValue(false);
+        };
+    }
+
+    private static Component viewDirectionDisplayValue(ViewDirectionDisplay value) {
+        return switch (value) {
+            case ON -> stateValue(true);
+            case WITH_DETAILS -> Component.empty()
+                .append(stateValue(true))
+                .append(Component.translatable(
+                    "value.locatorhud.view_direction.with_details_suffix"
+                ).withColor(VALUE_COLOR));
             case OFF -> stateValue(false);
         };
     }
@@ -464,41 +824,46 @@ public final class LocatorHudConfigScreen extends Screen {
             || (config.detailsPanelEnabled() && config.detailsBackgroundOpacity().drawsPanel());
     }
 
-    private int row(int top, int index) {
-        return top + this.rowSpacing * index;
-    }
-
-    private static final class HudScaleSlider extends AbstractSliderButton {
+    private static final class DiscreteOptionSlider<T> extends AbstractSliderButton {
         private final Component option;
-        private final Consumer<HudScale> onValueChanged;
-        private HudScale selected;
+        private final DiscreteSliderOptions<T> options;
+        private final Function<? super T, Component> valueFormatter;
+        private final Consumer<T> onValueChanged;
+        private T selected;
 
-        private HudScaleSlider(
+        private DiscreteOptionSlider(
             int x,
             int y,
             int width,
             int height,
             Component option,
-            HudScale initialValue,
-            Consumer<HudScale> onValueChanged
+            DiscreteSliderOptions<T> options,
+            T initialValue,
+            Function<? super T, Component> valueFormatter,
+            Consumer<T> onValueChanged
         ) {
-            super(x, y, width, height, CommonComponents.EMPTY, initialValue.sliderPosition());
-            this.option = option;
-            this.selected = initialValue;
-            this.onValueChanged = onValueChanged;
+            super(x, y, width, height, CommonComponents.EMPTY, options.position(initialValue));
+            this.option = Objects.requireNonNull(option, "option");
+            this.options = Objects.requireNonNull(options, "options");
+            this.selected = Objects.requireNonNull(initialValue, "initialValue");
+            this.valueFormatter = Objects.requireNonNull(valueFormatter, "valueFormatter");
+            this.onValueChanged = Objects.requireNonNull(onValueChanged, "onValueChanged");
             updateMessage();
         }
 
         @Override
         protected void updateMessage() {
-            setMessage(CommonComponents.optionNameValue(this.option, settingValue(this.selected.displayName())));
+            setMessage(CommonComponents.optionNameValue(
+                this.option,
+                this.valueFormatter.apply(this.selected)
+            ));
         }
 
         @Override
         protected void applyValue() {
-            HudScale next = HudScale.nearestSliderPosition(this.value);
-            this.value = next.sliderPosition();
-            if (next != this.selected) {
+            T next = this.options.nearest(this.value);
+            this.value = this.options.position(next);
+            if (!next.equals(this.selected)) {
                 this.selected = next;
                 this.onValueChanged.accept(next);
             }
@@ -507,59 +872,8 @@ public final class LocatorHudConfigScreen extends Screen {
         @Override
         public boolean keyPressed(KeyEvent event) {
             if (this.canChangeValue && (event.isLeft() || event.isRight())) {
-                int direction = event.isLeft() ? -1 : 1;
-                HudScale[] values = HudScale.values();
-                int index = Math.max(0, Math.min(values.length - 1, this.selected.ordinal() + direction));
-                setValue(values[index].sliderPosition());
-                return true;
-            }
-            return super.keyPressed(event);
-        }
-    }
-
-    private static final class BackgroundOpacitySlider extends AbstractSliderButton {
-        private final Component option;
-        private final Consumer<BackgroundOpacity> onValueChanged;
-        private BackgroundOpacity selected;
-
-        private BackgroundOpacitySlider(
-            int x,
-            int y,
-            int width,
-            int height,
-            Component option,
-            BackgroundOpacity initialValue,
-            Consumer<BackgroundOpacity> onValueChanged
-        ) {
-            super(x, y, width, height, CommonComponents.EMPTY, initialValue.sliderPosition());
-            this.option = option;
-            this.selected = initialValue;
-            this.onValueChanged = onValueChanged;
-            updateMessage();
-        }
-
-        @Override
-        protected void updateMessage() {
-            setMessage(CommonComponents.optionNameValue(this.option, backgroundOpacityValue(this.selected)));
-        }
-
-        @Override
-        protected void applyValue() {
-            BackgroundOpacity next = BackgroundOpacity.nearestSliderPosition(this.value);
-            this.value = next.sliderPosition();
-            if (next != this.selected) {
-                this.selected = next;
-                this.onValueChanged.accept(next);
-            }
-        }
-
-        @Override
-        public boolean keyPressed(KeyEvent event) {
-            if (this.canChangeValue && (event.isLeft() || event.isRight())) {
-                int direction = event.isLeft() ? -1 : 1;
-                BackgroundOpacity[] values = BackgroundOpacity.values();
-                int index = Math.max(0, Math.min(values.length - 1, this.selected.ordinal() + direction));
-                setValue(values[index].sliderPosition());
+                T next = this.options.step(this.selected, event.isLeft() ? -1 : 1);
+                setValue(this.options.position(next));
                 return true;
             }
             return super.keyPressed(event);

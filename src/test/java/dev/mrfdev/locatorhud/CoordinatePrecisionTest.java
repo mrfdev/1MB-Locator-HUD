@@ -23,6 +23,8 @@ final class CoordinatePrecisionTest {
 
     @Test
     void decimalPrecisionsUseStableDotFormatting() {
+        assertEquals("1 decimal", CoordinatePrecision.ONE_DECIMAL.displayName());
+        assertEquals("2 decimals", CoordinatePrecision.TWO_DECIMALS.displayName());
         assertEquals("12.3", CoordinatePrecision.ONE_DECIMAL.format(12.34D));
         assertEquals("12.35", CoordinatePrecision.TWO_DECIMALS.format(12.345D));
     }

@@ -7,18 +7,6 @@ import org.junit.jupiter.api.Test;
 
 final class HudScaleTest {
     @Test
-    void scalesTheWholePanelWithoutUnderestimatingItsScreenBounds() {
-        assertEquals(60, HudScale.EXTRA_SMALL.scaleDimension(100));
-        assertEquals(70, HudScale.VERY_SMALL.scaleDimension(100));
-        assertEquals(80, HudScale.COMPACT.scaleDimension(100));
-        assertEquals(90, HudScale.SMALL.scaleDimension(100));
-        assertEquals(100, HudScale.NORMAL.scaleDimension(100));
-        assertEquals(61, HudScale.EXTRA_SMALL.scaleDimension(101));
-        assertEquals(71, HudScale.VERY_SMALL.scaleDimension(101));
-        assertEquals(81, HudScale.COMPACT.scaleDimension(101));
-    }
-
-    @Test
     void exposesAllFiveScaleChoicesInAscendingOrder() {
         assertEquals(5, HudScale.values().length);
         assertEquals("Extra small (60%)", HudScale.values()[0].displayName());
@@ -43,13 +31,5 @@ final class HudScaleTest {
         assertEquals(0.5D, HudScale.COMPACT.sliderPosition());
         assertEquals(0.75D, HudScale.SMALL.sliderPosition());
         assertEquals(1.0D, HudScale.NORMAL.sliderPosition());
-
-        for (HudScale scale : HudScale.values()) {
-            assertSame(scale, HudScale.nearestSliderPosition(scale.sliderPosition()));
-        }
-        assertSame(HudScale.EXTRA_SMALL, HudScale.nearestSliderPosition(-1.0D));
-        assertSame(HudScale.NORMAL, HudScale.nearestSliderPosition(2.0D));
-        assertSame(HudScale.COMPACT, HudScale.nearestSliderPosition(0.4D));
-        assertSame(HudScale.EXTRA_SMALL, HudScale.nearestSliderPosition(0.125D));
     }
 }

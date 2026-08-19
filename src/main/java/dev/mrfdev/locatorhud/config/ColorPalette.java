@@ -1,5 +1,7 @@
 package dev.mrfdev.locatorhud.config;
 
+import dev.mrfdev.locatorhud.HudPaletteColors;
+
 public enum ColorPalette {
     NONE(
         "None (all white)",
@@ -129,17 +131,7 @@ public enum ColorPalette {
     );
 
     private final String displayName;
-    private final int backgroundRgb;
-    private final int accentRgb;
-    private final int primaryRgb;
-    private final int secondaryRgb;
-    private final int xRgb;
-    private final int yRgb;
-    private final int zRgb;
-    private final int directionRgb;
-    private final int worldRgb;
-    private final int biomeRgb;
-    private final int targetEntityLabelRgb;
+    private final HudPaletteColors colors;
 
     ColorPalette(
         String displayName,
@@ -156,17 +148,19 @@ public enum ColorPalette {
         int targetEntityLabelRgb
     ) {
         this.displayName = displayName;
-        this.backgroundRgb = backgroundRgb;
-        this.accentRgb = accentRgb;
-        this.primaryRgb = primaryRgb;
-        this.secondaryRgb = secondaryRgb;
-        this.xRgb = xRgb;
-        this.yRgb = yRgb;
-        this.zRgb = zRgb;
-        this.directionRgb = directionRgb;
-        this.worldRgb = worldRgb;
-        this.biomeRgb = biomeRgb;
-        this.targetEntityLabelRgb = targetEntityLabelRgb;
+        this.colors = new HudPaletteColors(
+            backgroundRgb,
+            accentRgb,
+            primaryRgb,
+            secondaryRgb,
+            xRgb,
+            yRgb,
+            zRgb,
+            directionRgb,
+            worldRgb,
+            biomeRgb,
+            targetEntityLabelRgb
+        );
     }
 
     public String displayName() {
@@ -174,50 +168,50 @@ public enum ColorPalette {
     }
 
     public int backgroundRgb() {
-        return this.backgroundRgb;
+        return this.colors.backgroundRgb();
     }
 
     public int accent() {
-        return opaque(this.accentRgb);
+        return this.colors.accent();
     }
 
     public int primary() {
-        return opaque(this.primaryRgb);
+        return this.colors.primary();
     }
 
     public int secondary() {
-        return opaque(this.secondaryRgb);
+        return this.colors.secondary();
     }
 
     public int x() {
-        return opaque(this.xRgb);
+        return this.colors.x();
     }
 
     public int y() {
-        return opaque(this.yRgb);
+        return this.colors.y();
     }
 
     public int z() {
-        return opaque(this.zRgb);
+        return this.colors.z();
     }
 
     public int direction() {
-        return opaque(this.directionRgb);
+        return this.colors.direction();
     }
 
     public int world() {
-        return opaque(this.worldRgb);
+        return this.colors.world();
     }
 
     public int biome() {
-        return opaque(this.biomeRgb);
+        return this.colors.biome();
     }
 
     public int targetEntityLabel() {
-        return opaque(this.targetEntityLabelRgb);
+        return this.colors.targetEntityLabel();
     }
 
-    private static int opaque(int rgb) {
-        return 0xFF000000 | rgb;
+    public HudPaletteColors colors() {
+        return this.colors;
     }
 }

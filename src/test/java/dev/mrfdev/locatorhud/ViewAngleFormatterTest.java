@@ -8,6 +8,8 @@ final class ViewAngleFormatterTest {
     @Test
     void usesTheStandardUppercaseOffLabelForWholeDegrees() {
         assertEquals("OFF", ViewAnglePrecision.WHOLE.displayName());
+        assertEquals("1 decimal", ViewAnglePrecision.ONE_DECIMAL.displayName());
+        assertEquals("2 decimals", ViewAnglePrecision.TWO_DECIMALS.displayName());
     }
 
     @Test

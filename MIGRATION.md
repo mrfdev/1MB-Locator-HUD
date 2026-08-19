@@ -8,12 +8,15 @@ The migration from the private `1MB-Mods` monorepo was completed on 2026-08-19 a
 - Public source and Gradle wrapper: verified
 - Original monorepo module: removed after verification
 
-## Reproducing the local project
+## Reproducing the 1.12.1 migration baseline
 
-1. Extract the archive under `/Users/floris/Projects/Codex/1MB-Locator-HUD`.
-2. Open that folder as a new Codex project.
-3. Run `./gradlew clean build` with JDK 25.
-4. Confirm `build/libs/1MB-Locator-HUD-1.12.1.jar` exists and loads in the Fabric 26.2 profile.
+1. Clone [mrfdev/1MB-Locator-HUD](https://github.com/mrfdev/1MB-Locator-HUD) under `/Users/floris/Projects/Codex/1MB-Locator-HUD`.
+2. Check out the preserved migration tag with `git switch --detach v1.12.1`.
+3. Open that folder as a Codex project.
+4. Run `./gradlew clean build` with JDK 25.
+5. Confirm `build/libs/1MB-Locator-HUD-1.12.1.jar` exists and loads in the Fabric 26.2 profile.
+
+For the current public release or development source, follow the versioned installation and build instructions in [README.md](README.md) instead.
 
 ## Publishing under a different repository
 

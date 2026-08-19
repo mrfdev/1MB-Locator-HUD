@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Java 25 clean build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle and validate the wrapper
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Build and run all delivery checks
+        run: ./gradlew clean build --configuration-cache --warning-mode=fail --no-daemon
+
+      - name: Verify generated checksum
+        working-directory: build/libs
+        run: sha256sum --check 1MB-Locator-HUD-*.jar.sha256
+
+      - name: Upload verified build artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: locator-hud-${{ github.sha }}
+          path: |
+            build/libs/1MB-Locator-HUD-*.jar
+            build/libs/1MB-Locator-HUD-*.jar.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload unit-test report after failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unit-test-report-${{ github.sha }}
+          path: build/reports/tests/test/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  client-smoke:
+    name: Client startup (${{ matrix.label }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: without Mod Menu
+            task: runClientSmokeWithoutModMenu
+            run-directory: clientSmokeWithoutModMenu
+          - label: with Mod Menu
+            task: runClientSmokeWithModMenu
+            run-directory: clientSmokeWithModMenu
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Java 25
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Set up Gradle and validate the wrapper
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      - name: Run production client smoke test
+        run: ./gradlew ${{ matrix.task }} --warning-mode=fail --no-daemon
+
+      - name: Upload client logs after failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: client-smoke-${{ matrix.run-directory }}-${{ github.sha }}
+          path: |
+            build/run/${{ matrix.run-directory }}/logs/
+            build/run/${{ matrix.run-directory }}/crash-reports/
+          if-no-files-found: ignore
+          retention-days: 7
