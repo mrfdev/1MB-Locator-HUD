@@ -20,7 +20,7 @@ final class HudLayoutTest {
         assertEquals(20, minimal.panelHeight(9, 2));
         assertEquals(9, panel.segmentGap());
         assertEquals(5, minimal.segmentGap());
-        assertEquals("  •  ", panel.detailDivider());
+        assertEquals(" • ", panel.detailDivider());
         assertEquals(" • ", minimal.detailDivider());
         assertEquals(" / ", panel.coordinateDivider());
         assertEquals("/", minimal.coordinateDivider());

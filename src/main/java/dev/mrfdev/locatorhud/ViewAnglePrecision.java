@@ -3,7 +3,7 @@ package dev.mrfdev.locatorhud;
 import java.util.Locale;
 
 public enum ViewAnglePrecision {
-    WHOLE("Off", 0),
+    WHOLE("OFF", 0),
     ONE_DECIMAL("One decimal", 1),
     TWO_DECIMALS("Two decimals", 2);
 

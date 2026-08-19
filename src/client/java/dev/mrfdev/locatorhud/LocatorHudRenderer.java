@@ -4,6 +4,7 @@ import dev.mrfdev.locatorhud.config.BackgroundOpacity;
 import dev.mrfdev.locatorhud.config.ColorPalette;
 import dev.mrfdev.locatorhud.config.HudCorner;
 import dev.mrfdev.locatorhud.config.LocatorHudConfig;
+import java.util.List;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -46,10 +47,10 @@ public final class LocatorHudRenderer {
     ) {
         HudLayout layout = HudLayout.forPanel(this.config.backgroundOpacity().drawsPanel());
         CoordinateDisplayMode coordinateDisplay = this.config.coordinateDisplay();
-        boolean showWorld = this.config.worldNameEnabled();
-        boolean worldWithDecimal = coordinateDisplay.worldSharesDecimalRow(showWorld);
-        boolean worldWithBlock = coordinateDisplay.worldSharesBlockRow(showWorld);
-        boolean standaloneWorld = coordinateDisplay.worldUsesOwnRow(showWorld);
+        WorldNameDisplay worldDisplay = this.config.worldNameDisplay();
+        boolean worldWithDecimal = coordinateDisplay.worldSharesDecimalRow(worldDisplay);
+        boolean worldWithBlock = coordinateDisplay.worldSharesBlockRow(worldDisplay);
+        boolean standaloneWorld = coordinateDisplay.worldUsesOwnRow(worldDisplay);
         String decimalX = this.config.precision().format(player.getX());
         String decimalY = this.config.precision().format(player.getY());
         String decimalZ = this.config.precision().format(player.getZ());
@@ -74,12 +75,14 @@ public final class LocatorHudRenderer {
             + layout.segmentGap()
             + segmentWidth(font, "Z", blockZ);
         int maximumContentWidth = maximumContentWidth(graphics, layout);
-        int worldPrefixWidth = worldWithDecimal
+        int worldCoordinateOverhead = worldWithDecimal
             ? decimalCoordinatesWidth + font.width(layout.coordinateDivider())
             : worldWithBlock
                 ? blockCoordinatesWidth + font.width(layout.coordinateDivider())
                 : 0;
-        world = showWorld ? truncate(font, world, maximumContentWidth - worldPrefixWidth) : "";
+        world = worldDisplay.showsWorld()
+            ? truncate(font, world, maximumContentWidth - worldCoordinateOverhead)
+            : "";
         int worldWidth = font.width(world);
         int decimalWidth = decimalCoordinatesWidth
             + (worldWithDecimal ? font.width(layout.coordinateDivider()) + worldWidth : 0);
@@ -105,7 +108,7 @@ public final class LocatorHudRenderer {
             contentWidth = Math.max(contentWidth, worldWidth);
         }
         int panelWidth = layout.panelWidth(contentWidth);
-        int panelHeight = layout.panelHeight(font.lineHeight, coordinateDisplay.coreRows(showWorld));
+        int panelHeight = layout.panelHeight(font.lineHeight, coordinateDisplay.coreRows(worldDisplay));
         PanelPlacement placement = placePanel(
             graphics,
             this.config.corner(),
@@ -136,6 +139,7 @@ public final class LocatorHudRenderer {
                 palette,
                 layout,
                 coordinateDisplay,
+                worldDisplay,
                 decimalX,
                 decimalY,
                 decimalZ,
@@ -160,45 +164,65 @@ public final class LocatorHudRenderer {
         Minecraft client,
         PanelPlacement mainPlacement
     ) {
-        int rowCount = detailsRowCount();
-        if (rowCount == 0) {
-            return;
-        }
-
-        HudLayout layout = HudLayout.forPanel(this.config.detailsBackgroundOpacity().drawsPanel());
-        int maximumContentWidth = maximumContentWidth(graphics, layout);
-        String biome = client.level.getBiome(client.player.blockPosition())
-            .unwrapKey()
-            .map(key -> key.identifier())
-            .map(identifier -> WorldNameFormatter.fromIdentifier(identifier.getNamespace(), identifier.getPath()))
-            .orElse("Unknown");
         CrosshairTargets targets = CrosshairTargets.capture(
             client,
             this.config.targetBlockEnabled(),
             this.config.targetFluidEnabled(),
             this.config.targetEntityEnabled()
         );
-        biome = truncate(font, biome, maximumContentWidth - font.width("BIOME "));
-        String targetBlock = truncate(font, targets.block(), maximumContentWidth - font.width("TB: "));
-        String targetFluid = truncate(font, targets.fluid(), maximumContentWidth - font.width("TF: "));
-        String targetEntity = truncate(font, targets.entity(), maximumContentWidth - font.width("TE: "));
+        DetailsRowVisibility visibleRows = DetailsRowVisibility.resolve(
+            this.config.biomeEnabled(),
+            this.config.targetBlockEnabled(),
+            targets.block(),
+            this.config.targetFluidEnabled(),
+            targets.fluid(),
+            this.config.targetEntityEnabled(),
+            targets.entity(),
+            this.config.autoHideEmptyTargetValues()
+        );
+        if (visibleRows.isEmpty()) {
+            return;
+        }
+
+        HudLayout layout = HudLayout.forPanel(this.config.detailsBackgroundOpacity().drawsPanel());
+        int maximumContentWidth = maximumContentWidth(graphics, layout);
+        String biome = visibleRows.biome()
+            ? truncate(
+                font,
+                client.level.getBiome(client.player.blockPosition())
+                    .unwrapKey()
+                    .map(key -> key.identifier())
+                    .map(identifier -> WorldNameFormatter.fromIdentifier(identifier.getNamespace(), identifier.getPath()))
+                    .orElse("Unknown"),
+                maximumContentWidth - font.width("BIOME ")
+            )
+            : "";
+        String targetBlock = visibleRows.targetBlock()
+            ? truncate(font, targets.block(), maximumContentWidth - font.width("TB: "))
+            : "";
+        String targetFluid = visibleRows.targetFluid()
+            ? truncate(font, targets.fluid(), maximumContentWidth - font.width("TF: "))
+            : "";
+        String targetEntity = visibleRows.targetEntity()
+            ? truncate(font, targets.entity(), maximumContentWidth - font.width("TE: "))
+            : "";
 
         int contentWidth = 0;
-        if (this.config.biomeEnabled()) {
+        if (visibleRows.biome()) {
             contentWidth = Math.max(contentWidth, font.width("BIOME ") + font.width(biome));
         }
-        if (this.config.targetBlockEnabled()) {
+        if (visibleRows.targetBlock()) {
             contentWidth = Math.max(contentWidth, segmentWidth(font, "TB:", targetBlock));
         }
-        if (this.config.targetFluidEnabled()) {
+        if (visibleRows.targetFluid()) {
             contentWidth = Math.max(contentWidth, segmentWidth(font, "TF:", targetFluid));
         }
-        if (this.config.targetEntityEnabled()) {
+        if (visibleRows.targetEntity()) {
             contentWidth = Math.max(contentWidth, segmentWidth(font, "TE:", targetEntity));
         }
 
         int panelWidth = layout.panelWidth(contentWidth);
-        int panelHeight = layout.panelHeight(font.lineHeight, rowCount);
+        int panelHeight = layout.panelHeight(font.lineHeight, visibleRows.rowCount());
         PanelPlacement placement = placePanel(
             graphics,
             this.config.detailsCorner(),
@@ -234,6 +258,7 @@ public final class LocatorHudRenderer {
                 font,
                 palette,
                 layout,
+                visibleRows,
                 biome,
                 targetBlock,
                 targetFluid,
@@ -250,6 +275,7 @@ public final class LocatorHudRenderer {
         ColorPalette palette,
         HudLayout layout,
         CoordinateDisplayMode coordinateDisplay,
+        WorldNameDisplay worldDisplay,
         String decimalX,
         String decimalY,
         String decimalZ,
@@ -263,46 +289,41 @@ public final class LocatorHudRenderer {
     ) {
         int textX = layout.accentWidth() + layout.horizontalPadding();
         int rowY = layout.verticalPadding();
-        boolean showWorld = this.config.worldNameEnabled();
-        boolean worldWithDecimal = coordinateDisplay.worldSharesDecimalRow(showWorld);
-        boolean worldWithBlock = coordinateDisplay.worldSharesBlockRow(showWorld);
         if (coordinateDisplay.showsDecimal()) {
-            int cursorX = drawDecimalRow(
+            drawCoordinateWorldRow(
                 graphics,
                 font,
                 decimalX,
                 decimalY,
                 decimalZ,
+                world,
                 textX,
                 rowY,
                 palette,
-                layout.segmentGap()
+                layout,
+                coordinateDisplay.decimalRowSegments(worldDisplay),
+                false
             );
-            if (worldWithDecimal) {
-                cursorX = drawText(graphics, font, layout.coordinateDivider(), cursorX, rowY, palette.accent());
-                graphics.text(font, world, cursorX, rowY, palette.world(), this.config.textShadow());
-            }
             rowY += font.lineHeight + layout.rowGap();
         }
         if (coordinateDisplay.showsBlock()) {
-            int cursorX = drawBlockRow(
+            drawCoordinateWorldRow(
                 graphics,
                 font,
                 blockX,
                 blockY,
                 blockZ,
+                world,
                 textX,
                 rowY,
                 palette,
-                layout.segmentGap()
+                layout,
+                coordinateDisplay.blockRowSegments(worldDisplay),
+                true
             );
-            if (worldWithBlock) {
-                cursorX = drawText(graphics, font, layout.coordinateDivider(), cursorX, rowY, palette.accent());
-                graphics.text(font, world, cursorX, rowY, palette.world(), this.config.textShadow());
-            }
             rowY += font.lineHeight + layout.rowGap();
         }
-        if (coordinateDisplay.worldUsesOwnRow(showWorld)) {
+        if (coordinateDisplay.worldUsesOwnRow(worldDisplay)) {
             graphics.text(font, world, textX, rowY, palette.world(), this.config.textShadow());
             rowY += font.lineHeight + layout.rowGap();
         }
@@ -317,11 +338,61 @@ public final class LocatorHudRenderer {
         }
     }
 
+    private void drawCoordinateWorldRow(
+        GuiGraphicsExtractor graphics,
+        Font font,
+        String xValue,
+        String yValue,
+        String zValue,
+        String world,
+        int x,
+        int y,
+        ColorPalette palette,
+        HudLayout layout,
+        List<CoordinateRowSegment> segments,
+        boolean blockCoordinates
+    ) {
+        int cursorX = x;
+        for (int index = 0; index < segments.size(); index++) {
+            if (index > 0) {
+                cursorX = drawText(graphics, font, layout.coordinateDivider(), cursorX, y, palette.accent());
+            }
+            if (segments.get(index) == CoordinateRowSegment.WORLD) {
+                cursorX = drawText(graphics, font, world, cursorX, y, palette.world());
+            } else if (blockCoordinates) {
+                cursorX = drawBlockRow(
+                    graphics,
+                    font,
+                    xValue,
+                    yValue,
+                    zValue,
+                    cursorX,
+                    y,
+                    palette,
+                    layout.segmentGap()
+                );
+            } else {
+                cursorX = drawDecimalRow(
+                    graphics,
+                    font,
+                    xValue,
+                    yValue,
+                    zValue,
+                    cursorX,
+                    y,
+                    palette,
+                    layout.segmentGap()
+                );
+            }
+        }
+    }
+
     private void drawDetailsRows(
         GuiGraphicsExtractor graphics,
         Font font,
         ColorPalette palette,
         HudLayout layout,
+        DetailsRowVisibility visibleRows,
         String biome,
         String targetBlock,
         String targetFluid,
@@ -329,20 +400,20 @@ public final class LocatorHudRenderer {
     ) {
         int textX = layout.accentWidth() + layout.horizontalPadding();
         int rowY = layout.verticalPadding();
-        if (this.config.biomeEnabled()) {
+        if (visibleRows.biome()) {
             graphics.text(font, "BIOME ", textX, rowY, palette.secondary(), this.config.textShadow());
             drawText(graphics, font, biome, textX + font.width("BIOME "), rowY, palette.biome());
             rowY += font.lineHeight + layout.rowGap();
         }
-        if (this.config.targetBlockEnabled()) {
+        if (visibleRows.targetBlock()) {
             drawSegment(graphics, font, "TB:", targetBlock, textX, rowY, palette.x(), palette.primary());
             rowY += font.lineHeight + layout.rowGap();
         }
-        if (this.config.targetFluidEnabled()) {
+        if (visibleRows.targetFluid()) {
             drawSegment(graphics, font, "TF:", targetFluid, textX, rowY, palette.z(), palette.primary());
             rowY += font.lineHeight + layout.rowGap();
         }
-        if (this.config.targetEntityEnabled()) {
+        if (visibleRows.targetEntity()) {
             drawSegment(
                 graphics,
                 font,
@@ -368,7 +439,8 @@ public final class LocatorHudRenderer {
             return;
         }
         if (this.config.panelShadow()) {
-            graphics.fill(1, 2, panelWidth + 1, panelHeight + 2, 0x50000000);
+            int shadowAlpha = Math.min(0x50, background.alpha());
+            graphics.fill(1, 2, panelWidth + 1, panelHeight + 2, shadowAlpha << 24);
         }
         graphics.fill(0, 0, panelWidth, panelHeight, background.applyTo(palette.backgroundRgb()));
         graphics.fill(0, 0, layout.accentWidth(), panelHeight, palette.accent());
@@ -427,13 +499,6 @@ public final class LocatorHudRenderer {
         int valueX = x + font.width(label + " ");
         graphics.text(font, value, valueX, y, valueColor, this.config.textShadow());
         return valueX + font.width(value);
-    }
-
-    private int detailsRowCount() {
-        return (this.config.biomeEnabled() ? 1 : 0)
-            + (this.config.targetBlockEnabled() ? 1 : 0)
-            + (this.config.targetFluidEnabled() ? 1 : 0)
-            + (this.config.targetEntityEnabled() ? 1 : 0);
     }
 
     private static int maximumContentWidth(GuiGraphicsExtractor graphics, HudLayout layout) {

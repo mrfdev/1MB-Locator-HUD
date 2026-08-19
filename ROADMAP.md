@@ -1,6 +1,6 @@
 # Roadmap
 
-The next planned version is 1.13.0.
+The current public release is 1.22.0 — Snapshot Public Beta 2.
 
 ## CMI movement-speed indicator and presets
 

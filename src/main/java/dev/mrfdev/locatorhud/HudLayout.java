@@ -25,7 +25,7 @@ public record HudLayout(
     }
 
     public String detailDivider() {
-        return this.drawsPanel ? "  •  " : " • ";
+        return " • ";
     }
 
     public String coordinateDivider() {

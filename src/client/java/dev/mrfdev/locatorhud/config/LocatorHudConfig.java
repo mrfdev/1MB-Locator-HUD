@@ -6,6 +6,7 @@ import dev.mrfdev.locatorhud.CoordinateDisplayMode;
 import dev.mrfdev.locatorhud.CoordinatePrecision;
 import dev.mrfdev.locatorhud.HudScale;
 import dev.mrfdev.locatorhud.ViewAnglePrecision;
+import dev.mrfdev.locatorhud.WorldNameDisplay;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -25,13 +26,16 @@ public final class LocatorHudConfig {
     private HudCorner corner = HudCorner.TOP_LEFT;
     private CoordinateDisplayMode coordinateDisplay = CoordinateDisplayMode.DECIMAL_ONLY;
     private CoordinatePrecision precision = CoordinatePrecision.ONE_DECIMAL;
+    // Retained as a serialized mirror so older versions can still read this configuration.
     private boolean worldNameEnabled = true;
+    private WorldNameDisplay worldNameDisplay;
     private boolean viewAnglesEnabled = false;
     private ViewAnglePrecision viewAnglePrecision = ViewAnglePrecision.WHOLE;
     private boolean biomeEnabled = false;
     private boolean targetBlockEnabled = false;
     private boolean targetFluidEnabled = false;
     private boolean targetEntityEnabled = false;
+    private boolean autoHideEmptyTargetValues = false;
     private HudScale hudScale = HudScale.NORMAL;
     private HudCorner detailsCorner = HudCorner.TOP_RIGHT;
     private HudScale detailsHudScale = HudScale.COMPACT;
@@ -56,11 +60,14 @@ public final class LocatorHudConfig {
             loaded.validate();
             return loaded;
         } catch (IOException | RuntimeException exception) {
-            return new LocatorHudConfig();
+            LocatorHudConfig defaults = new LocatorHudConfig();
+            defaults.validate();
+            return defaults;
         }
     }
 
     public void save() {
+        validate();
         try {
             Files.createDirectories(PATH.getParent());
             Path temporary = PATH.resolveSibling(PATH.getFileName() + ".tmp");
@@ -79,6 +86,7 @@ public final class LocatorHudConfig {
 
     public void reset() {
         LocatorHudConfig defaults = new LocatorHudConfig();
+        defaults.validate();
         this.enabled = defaults.enabled;
         this.mainPanelEnabled = defaults.mainPanelEnabled;
         this.detailsPanelEnabled = defaults.detailsPanelEnabled;
@@ -86,12 +94,14 @@ public final class LocatorHudConfig {
         this.coordinateDisplay = defaults.coordinateDisplay;
         this.precision = defaults.precision;
         this.worldNameEnabled = defaults.worldNameEnabled;
+        this.worldNameDisplay = defaults.worldNameDisplay;
         this.viewAnglesEnabled = defaults.viewAnglesEnabled;
         this.viewAnglePrecision = defaults.viewAnglePrecision;
         this.biomeEnabled = defaults.biomeEnabled;
         this.targetBlockEnabled = defaults.targetBlockEnabled;
         this.targetFluidEnabled = defaults.targetFluidEnabled;
         this.targetEntityEnabled = defaults.targetEntityEnabled;
+        this.autoHideEmptyTargetValues = defaults.autoHideEmptyTargetValues;
         this.hudScale = defaults.hudScale;
         this.detailsCorner = defaults.detailsCorner;
         this.detailsHudScale = defaults.detailsHudScale;
@@ -162,11 +172,22 @@ public final class LocatorHudConfig {
     }
 
     public boolean worldNameEnabled() {
-        return this.worldNameEnabled;
+        return worldNameDisplay().showsWorld();
     }
 
     public void setWorldNameEnabled(boolean worldNameEnabled) {
-        this.worldNameEnabled = worldNameEnabled;
+        setWorldNameDisplay(WorldNameDisplay.fromLegacy(worldNameEnabled));
+    }
+
+    public WorldNameDisplay worldNameDisplay() {
+        return this.worldNameDisplay != null
+            ? this.worldNameDisplay
+            : WorldNameDisplay.fromLegacy(this.worldNameEnabled);
+    }
+
+    public void setWorldNameDisplay(WorldNameDisplay worldNameDisplay) {
+        this.worldNameDisplay = worldNameDisplay != null ? worldNameDisplay : WorldNameDisplay.BEHIND;
+        this.worldNameEnabled = this.worldNameDisplay.showsWorld();
         save();
     }
 
@@ -221,6 +242,15 @@ public final class LocatorHudConfig {
 
     public void setTargetEntityEnabled(boolean targetEntityEnabled) {
         this.targetEntityEnabled = targetEntityEnabled;
+        save();
+    }
+
+    public boolean autoHideEmptyTargetValues() {
+        return this.autoHideEmptyTargetValues;
+    }
+
+    public void setAutoHideEmptyTargetValues(boolean autoHideEmptyTargetValues) {
+        this.autoHideEmptyTargetValues = autoHideEmptyTargetValues;
         save();
     }
 
@@ -309,6 +339,10 @@ public final class LocatorHudConfig {
         if (this.coordinateDisplay == null) {
             this.coordinateDisplay = CoordinateDisplayMode.DECIMAL_ONLY;
         }
+        if (this.worldNameDisplay == null) {
+            this.worldNameDisplay = WorldNameDisplay.fromLegacy(this.worldNameEnabled);
+        }
+        this.worldNameEnabled = this.worldNameDisplay.showsWorld();
         if (this.viewAnglePrecision == null) {
             this.viewAnglePrecision = ViewAnglePrecision.WHOLE;
         }

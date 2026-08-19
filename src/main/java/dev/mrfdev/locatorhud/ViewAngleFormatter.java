@@ -20,9 +20,9 @@ public final class ViewAngleFormatter {
         float wrapped = wrapDegrees(pitch);
         float rounded = precision.round(wrapped);
         if (rounded == 0.0F) {
-            return precision.formatDegrees(0.0F) + " level";
+            return precision.formatDegrees(0.0F);
         }
-        return precision.formatDegrees(Math.abs(rounded)) + " " + (rounded > 0.0F ? "down" : "up");
+        return precision.formatDegrees(Math.abs(rounded)) + (rounded > 0.0F ? "↓" : "↑");
     }
 
     static float wrapDegrees(float degrees) {

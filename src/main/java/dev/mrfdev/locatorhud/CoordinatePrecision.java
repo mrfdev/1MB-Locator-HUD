@@ -4,6 +4,7 @@ import java.util.Locale;
 
 public enum CoordinatePrecision {
     BLOCK("Block", 0),
+    NONE("None", 0),
     ONE_DECIMAL("1 decimal", 1),
     TWO_DECIMALS("2 decimals", 2);
 
@@ -23,9 +24,10 @@ public enum CoordinatePrecision {
         if (!Double.isFinite(coordinate)) {
             return "?";
         }
-        if (this.decimalPlaces == 0) {
+        if (this == BLOCK) {
             return Long.toString((long) Math.floor(coordinate));
         }
-        return String.format(Locale.ROOT, "%." + this.decimalPlaces + "f", coordinate);
+        String formatted = String.format(Locale.ROOT, "%." + this.decimalPlaces + "f", coordinate);
+        return this == NONE && formatted.equals("-0") ? "0" : formatted;
     }
 }

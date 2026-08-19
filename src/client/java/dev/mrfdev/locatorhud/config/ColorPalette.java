@@ -20,14 +20,14 @@ public enum ColorPalette {
         0x181818,
         0x8E8E8E,
         0xFFFFFF,
-        0xA8A8A8,
-        0xA8A8A8,
-        0xA8A8A8,
-        0xA8A8A8,
+        0xC0C0C0,
+        0xC0C0C0,
+        0xC0C0C0,
+        0xC0C0C0,
         0xFFFFFF,
         0xFFFFFF,
         0xFFFFFF,
-        0xA8A8A8
+        0xC0C0C0
     ),
     OCEAN(
         "Ocean",
